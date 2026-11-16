@@ -350,6 +350,7 @@ function contextHint(err, line, code) {
   if (/Unexpected token ','/.test(msg) && /=\s*\{\s*\[/.test(code)) return "Tu as mis des accolades `{ }` autour de ton tableau. Un tableau s’écrit seulement avec des crochets : `const liste = [ … ];`. Les accolades sont pour les objets, à l’intérieur.";
   const m = msg.match(/properties of undefined/) && String(code).match(/(\w+)\[\s*\1\.length\s*\]/);
   if (m) return "`" + m[0] + "` n’existe pas : avec " + "`length`" + " éléments, les index vont de 0 à `length - 1`. Le dernier élément, c’est `" + m[1] + "[" + m[1] + ".length - 1]`.";
+  if (/properties of null/.test(msg) && /getElementById\(\s*["'`]#|getElementById\(\s*"#"\s*\+/.test(code)) return "`getElementById` cherche un id **sans** le # : écris `getElementById(\"accueil\")`, pas `getElementById(\"#accueil\")`. Le # sert seulement avec `querySelector`.";
   if (/properties of null/.test(msg)) { const q = String(code).match(/querySelector(?:All)?\(\s*["']([a-z][\w-]*)["']\s*\)/); if (q && !/^(h[1-6]|p|ul|li|main|form|input|button|section|nav|header|footer|article|span|div|a|textarea|label|aside|small)$/.test(q[1])) return "`querySelector(\"" + q[1] + "\")` cherche une balise `<" + q[1] + ">`, qui n’existe pas. Pour une **classe**, il faut un point : `querySelector(\"." + q[1] + "\")`. Pour un **id**, un dièse : `\"#" + q[1] + "\"`.";
   }
   return null;
@@ -459,7 +460,7 @@ function showMap() {
     <div>
       <p class="kicker">JavaScript · ${LEVELS.length} missions · ${nbClients} clients · 2 formations</p>
       <h1>Bip <span>Agence</span></h1>
-      <p class="lead">Tu entres en stage dans l’agence de Bip. Neuf clients, de la boulangerie au réseau social, attendent leur site, et deux formations internes t’apprennent à lire les accolades et à trouver le chemin vers une donnée. Ici, on ne recopie pas : on <strong>observe</strong> le code s’exécuter, on <strong>prédit</strong>, on <strong>explique</strong>. À la fin, tu sais pourquoi chaque ligne est là.</p>
+      <p class="lead">Tu entres en stage dans l’agence de Bip. Dix clients, de la boulangerie à l’appli de réservation, attendent leur site, et deux formations internes t’apprennent à lire les accolades et à trouver le chemin vers une donnée. Ici, on ne recopie pas : on <strong>observe</strong> le code s’exécuter, on <strong>prédit</strong>, on <strong>explique</strong>. À la fin, tu sais pourquoi chaque ligne est là.</p>
       <div class="hero-actions">
         ${nxt ? `<button class="btn btn-primary" type="button" data-open="${nxt.id}">${nb ? "Continuer" : "Commencer le stage"} : mission ${levelIndex(nxt.id) + 1}</button>` : projectOpen() ? `<button class="btn btn-primary" type="button" id="hero-project">${proj() ? "Mon projet bonus" : "Stage validé ! Projet bonus"}</button>` : ""}
         ${!nxt ? `<button class="btn" type="button" data-open="${SANDBOX.id}">Bac à sable</button>` : ""}
