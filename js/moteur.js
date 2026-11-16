@@ -19,6 +19,7 @@ const chLabel = n => { const c = CHAPTERS.find(x => x.n === n); if (!c) return "
 const KEY = "bip-agence-v1";
 let store = { progress: {}, drafts: {}, teacher: false };
 try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) { /* jeu sans sauvegarde */ }
+const trk = (kind, id, extra) => { if (window.BipCloud) BipCloud.track(kind, id, extra); };
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* rien */ } if (window.BipCloud) BipCloud.queue(); }
 
 let current = null, session = null, liveRun = null, silent = false;
@@ -564,6 +565,7 @@ function openLevel(id) {
   current = L;
   $("#view-project").innerHTML = "";
   session = { hints: 0, attempts: 0, checkWrong: 0, teacherUsed: false, results: null, answers: {}, checkAnswers: {}, predictTries: 0, errLine: null, stepLine: null, stepRun: null };
+  if (!L.sandbox) trk("open", L.id);
   setHash(L.sandbox ? SANDBOX.id : "mission-" + L.id);
   const i = levelIndex(L.id);
   const ch = CHAPTERS.find(c => c.n === L.ch);
@@ -788,6 +790,7 @@ function runCode() {
   } else { liveRun = null; main = execute(L, code, scen0, stage, { live: true }); }
   showRun(main, code);
   session.results = results;
+  if (!L.sandbox) trk("run", L.id, { error: main.error ? (main.error.message || String(main.error)) : null, ok: results ? results.every(r => r.ok) : undefined, goals: results ? [results.filter(r => r.ok).length, results.length] : undefined });
   if (L.goals) renderGoals(results);
   if (L.render) renderApercu(L, main);
   $("#check-slot").innerHTML = "";
@@ -977,7 +980,7 @@ function checkObserve(L) {
   if (good === null) { msg.textContent = "Réponds d’abord à toutes les questions."; return; }
   session.attempts++;
   if (good === L.questions.length) { msg.textContent = "Tout est juste !"; setMood("happy"); setTimeout(() => success(L), 400); }
-  else { msg.textContent = `${good} / ${L.questions.length}. Utilise le pas à pas pour vérifier, puis corrige.`; setMood("think"); }
+  else { trk("wrong", L.id); msg.textContent = `${good} / ${L.questions.length}. Utilise le pas à pas pour vérifier, puis corrige.`; setMood("think"); }
 }
 function showCheck(L) {
   if (!L.check) { setTimeout(() => success(L), 300); return; }
@@ -988,7 +991,7 @@ function showCheck(L) {
     const good = gradeQuestions(L.check, "c", session.checkAnswers); const msg = $("#c-msg");
     if (good === null) { msg.textContent = "Réponds à toutes les questions."; return; }
     if (good === L.check.length) { msg.textContent = "Parfait !"; setTimeout(() => success(L), 400); }
-    else { session.checkWrong++; msg.textContent = "Ton code marche, mais une explication n’est pas juste. Relis ton code et réessaie."; }
+    else { session.checkWrong++; trk("wrong", L.id); msg.textContent = "Ton code marche, mais une explication n’est pas juste. Relis ton code et réessaie."; }
   });
   $("#check-card").scrollIntoView({ block: "center", behavior: "smooth" });
 }
@@ -1000,6 +1003,7 @@ function checkPredict(L) {
   if (ins.some(v => v.trim() === "")) { $("#predict-msg").textContent = "Remplis toutes les lignes, même si tu n’es pas sûr."; return; }
   session.predictTries++;
   let good = 0;
+  if (session.expected.some((exp, i) => predNorm(ins[i]) !== predNorm(exp))) trk("wrong", L.id);
   session.expected.forEach((exp, i) => {
     const ok = predNorm(ins[i]) === predNorm(exp); if (ok) good++;
     const row = $("#pred-" + i); row.className = "pred " + (ok ? "ok" : "ko");
@@ -1018,7 +1022,7 @@ function checkPredict(L) {
 /* ---------- indices, solution formateur ---------- */
 function showHint() {
   const L = current; if (session.hints >= L.hints.length) return;
-  session.hints++;
+  session.hints++; trk("hint", L.id);
   $("#help").hidden = false;
   $("#hint-list").innerHTML = L.hints.slice(0, session.hints).map(h => `<li>${md(h)}</li>`).join("");
   const left = L.hints.length - session.hints;
@@ -1026,7 +1030,7 @@ function showHint() {
   $("#help").scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 function teacherSolution() {
-  const L = current; session.teacherUsed = true;
+  const L = current; session.teacherUsed = true; trk("solution", L.id);
   if (L.type === "fill") { const parts = fillParts(L); document.querySelectorAll(".blank").forEach((b, k) => { b.value = parts[k * 2 + 1]; b.dispatchEvent(new Event("input")); }); return; }
   $("#help").hidden = false;
   $("#solution-box").hidden = false;
@@ -1034,7 +1038,7 @@ function teacherSolution() {
   $("#solution-box").scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 function teacherAnswers() {
-  const L = current; session.teacherUsed = true;
+  const L = current; session.teacherUsed = true; trk("solution", L.id);
   if (L.type === "observe") L.questions.forEach((q, qi) => { const b = $(`.opt[data-p="q"][data-q="${qi}"][data-o="${q.a}"]`); if (b) b.click(); });
   if (L.type === "predict") session.expected.forEach((e, i) => { $("#pred-in-" + i).value = e; });
 }
@@ -1054,6 +1058,7 @@ function success(L) {
   const chBefore = chapterDone(L.ch);
   const allBefore = allMissionsDone();
   store.progress[L.id] = { stars: Math.max(before ? before.stars : 0, stars) };
+  trk("done", L.id, { stars });
   save(); updateStats();
   const delivered = !chBefore && chapterDone(L.ch);
   const all = LEVELS.every(l => isDone(l.id));
@@ -1360,12 +1365,12 @@ function runPath(L) {
   if (!input.trim()) { fb.innerHTML = `<p class="pf pf-ko">Écris d’abord un chemin, en commençant par <code>${esc(L.root)}</code>.</p>`; return; }
   const ctx = { root: L.root, data: session.pathData };
   const cmd = parseCommand(input);
-  const fail = (msg, trail) => { session.mistakes++; setMood("think"); if (trail && trail.length) animateTrail(trail, "tn-err"); fb.innerHTML = (trail && trail.length ? `<p class="mini-label">Ton trajet</p>${trailHTML(trail)}` : "") + `<p class="pf pf-ko">${md(msg)}</p>`; };
+  const fail = (msg, trail) => { session.mistakes++; trk("wrong", L.id); setMood("think"); if (trail && trail.length) animateTrail(trail, "tn-err"); fb.innerHTML = (trail && trail.length ? `<p class="mini-label">Ton trajet</p>${trailHTML(trail)}` : "") + `<p class="pf pf-ko">${md(msg)}</p>`; };
   if (cmd.kind !== task.mode) return fail(MODE_HELP[task.mode]);
   let r, ok = false, apply = null;
   if (task.mode === "get") {
     r = walkPath(cmd.path, ctx); if (r.error) return fail(r.error, r.trail);
-    if (!sameKeys(r.keys, task.target)) { session.mistakes++; setMood("think"); animateTrail(r.trail, "tn-err"); fb.innerHTML = `<p class="mini-label">Ton trajet</p>${trailHTML(r.trail)}<p class="pf pf-ko">Ton chemin marche, mais il arrive sur la case en orange, pas sur la cible verte. Compare les deux et ajuste.</p>`; return; }
+    if (!sameKeys(r.keys, task.target)) { session.mistakes++; trk("wrong", L.id); setMood("think"); animateTrail(r.trail, "tn-err"); fb.innerHTML = `<p class="mini-label">Ton trajet</p>${trailHTML(r.trail)}<p class="pf pf-ko">Ton chemin marche, mais il arrive sur la case en orange, pas sur la cible verte. Compare les deux et ajuste.</p>`; return; }
     if (task.requireLength && !r.usesLength) return fail("C’est la bonne case, mais tu as écrit son numéro à la main. Utilise `length - 1` entre les crochets, pour que le chemin vise toujours le dernier même si le tableau grandit.", r.trail);
     ok = true;
   } else if (task.mode === "set" || task.mode === "delete") {
@@ -1640,6 +1645,7 @@ function runProject(quiet) {
   }
   silent = false;
   session.results = results;
+  if (!quiet) trk("run", "projet-" + n, { error: main.error ? (main.error.message || String(main.error)) : null, ok: results.every(r => r.ok), goals: [results.filter(r => r.ok).length, results.length] });
   if (main.error) {
     renderStepGoals(null, step);
     const ln = errorLine(main.error, code, main.preludeLines);
@@ -1669,7 +1675,7 @@ function showStepCheck(step) {
   $("#c-step").addEventListener("click", () => {
     const good = gradeQuestions(step.check, "c", session.checkAnswers); const msg = $("#c-msg");
     if (good === null) { msg.textContent = "Réponds à toutes les questions."; return; }
-    if (good !== step.check.length) { session.checkWrong++; msg.textContent = "Une réponse n’est pas juste : relis ton code et réessaie."; return; }
+    if (good !== step.check.length) { session.checkWrong++; trk("wrong", "projet-" + step.n); msg.textContent = "Une réponse n’est pas juste : relis ton code et réessaie."; return; }
     const ex = $("#explain").value.trim();
     if (ex.length < 60 || ex.split(/[.!?]/).filter(x => x.trim().length > 3).length < 2) { msg.textContent = "Écris au moins 2 vraies phrases pour expliquer ton code."; $("#explain").focus(); return; }
     validateStep(step, ex);
@@ -1681,6 +1687,7 @@ function validateStep(step, explainText) {
   let stars = Math.max(1, 3 - (session.hints > 0 ? 1 : 0) - (session.checkWrong > 0 ? 1 : 0)); if (session.teacherUsed) stars = 1;
   const before = p.steps[step.n];
   p.steps[step.n] = { stars: Math.max(before ? before.stars : 0, stars), explain: explainText };
+  trk("done", "projet-" + step.n, { stars });
   save(); updateStats();
   const steps = projSteps(p.type); const next = steps[step.n];
   const nextOpen = next ? stepUnlocked(next.n) : allStepsDone();
@@ -1770,8 +1777,8 @@ document.addEventListener("click", e => {
   switch (t.id) {
     case "prun": runProject(false); break;
     case "ptrace": { const run = traceRun(PROJECT_LEVEL(), proj().files.js); selectTab("step"); if (session.file !== "js") mountEditor("js"); renderStepper(run, {}); break; }
-    case "phint": { const step = projSteps(proj().type)[session.projStep - 1]; if (session.hints >= step.hints.length) break; session.hints++; $("#help").hidden = false; $("#hint-list").innerHTML = step.hints.slice(0, session.hints).map(h => `<li>${md(h)}</li>`).join(""); const left = step.hints.length - session.hints; t.textContent = left ? `Indice (${left})` : "Plus d’indice"; t.disabled = !left; $("#help").scrollIntoView({ block: "nearest", behavior: "smooth" }); break; }
-    case "psolution": { const P = PROJECT_TYPES[proj().type], n = session.projStep; session.teacherUsed = true; $("#help").hidden = false; $("#solution-box").hidden = false; $("#solution-box").innerHTML = `<p class="mini-label">Solution complète jusqu’à l’étape ${n} (formateur)</p><pre class="code-block">${highlight(solutionAt(P.js, n, "js"))}</pre><button class="btn btn-small" type="button" id="psol-apply">Remplacer mes fichiers par la solution</button>`; break; }
+    case "phint": { const step = projSteps(proj().type)[session.projStep - 1]; if (session.hints >= step.hints.length) break; session.hints++; trk("hint", "projet-" + session.projStep); $("#help").hidden = false; $("#hint-list").innerHTML = step.hints.slice(0, session.hints).map(h => `<li>${md(h)}</li>`).join(""); const left = step.hints.length - session.hints; t.textContent = left ? `Indice (${left})` : "Plus d’indice"; t.disabled = !left; $("#help").scrollIntoView({ block: "nearest", behavior: "smooth" }); break; }
+    case "psolution": { const P = PROJECT_TYPES[proj().type], n = session.projStep; session.teacherUsed = true; trk("solution", "projet-" + n); $("#help").hidden = false; $("#solution-box").hidden = false; $("#solution-box").innerHTML = `<p class="mini-label">Solution complète jusqu’à l’étape ${n} (formateur)</p><pre class="code-block">${highlight(solutionAt(P.js, n, "js"))}</pre><button class="btn btn-small" type="button" id="psol-apply">Remplacer mes fichiers par la solution</button>`; break; }
     case "psol-apply": { const P = PROJECT_TYPES[proj().type], n = session.projStep; proj().files.js = solutionAt(P.js, n, "js"); proj().files.html = P.html; proj().files.css = P.css; save(); mountEditor(session.file); runProject(true); toast("Solution chargée."); break; }
     case "copy-fiche": copyText(ficheText(), "La fiche"); break;
     case "proj-change": twoStep(t, "Tout recommencer ? Clique encore", () => { store.projet = null; save(); showProject(); }); break;

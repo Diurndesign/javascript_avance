@@ -39,6 +39,14 @@ Sans compte, la progression reste dans le navigateur. Avec un compte (**e-mail +
 
 Rappel aux élèves : noter son e-mail et son mot de passe, et se déconnecter en partant d'un ordinateur de l'école.
 
+## L'espace formateur
+
+Page : `admin.html` (https://diurndesign.github.io/javascript_avance/admin.html). Le formateur s'y connecte avec son compte des jeux et voit, pour chaque élève et pour les deux jeux : missions faites, étoiles, mission en cours, élèves bloqués, essais, erreurs, indices, mauvaises réponses, solutions vues, temps passé, le code tapé dans chaque mission, et pour le projet bonus les étapes et les explications écrites. Un tableau liste aussi les missions qui posent le plus de problèmes à la classe.
+
+Accès : réservé par les règles Firestore à l'identifiant (UID) du formateur. À la première connexion, la page affiche les règles à coller dans la console Firebase, avec l'UID déjà rempli.
+
+Si des missions sont ajoutées ou renommées, régénérer `js/admin-missions.js` (la liste des missions affichée dans la page formateur).
+
 ## Pour le formateur
 
 Carnet › Options › **Mode formateur** (code : `itecom`). Il débloque toutes les missions et le projet bonus, et donne accès aux solutions.
@@ -58,4 +66,7 @@ js/projets.js             le projet bonus : étapes, objectifs, solutions
 js/projets-clients.js     les trois clients : HTML, CSS et contenus fournis
 js/schemas.js             les schémas du Carnet
 js/moteur.js              le moteur du jeu (éditeur, exécution, vérifications)
+admin.html                l'espace formateur
+js/admin.js               le code de l'espace formateur
+js/admin-missions.js      la liste des missions des deux jeux (pour l'espace formateur)
 ```
