@@ -19,7 +19,7 @@ const chLabel = n => { const c = CHAPTERS.find(x => x.n === n); if (!c) return "
 const KEY = "bip-agence-v1";
 let store = { progress: {}, drafts: {}, teacher: false };
 try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) { /* jeu sans sauvegarde */ }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* rien */ } }
+function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* rien */ } if (window.BipCloud) BipCloud.queue(); }
 
 let current = null, session = null, liveRun = null, silent = false;
 const silentErrors = [];
@@ -471,6 +471,7 @@ function showMap() {
     </div>
     <div class="hero-bip"><div class="bob">${bipSVG(nb === LEVELS.length ? "happy" : null)}</div><p class="kicker" style="margin:0">Bip · ton maître de stage</p></div>
   </section>
+  ${window.BipCloud ? BipCloud.bannerHTML() : ""}
   ${projectBlockHTML()}
   <div class="section-title"><h2>Huit façons d’apprendre</h2><p>Chaque client mélange ces missions, dans cet ordre : d’abord comprendre, puis s’entraîner, puis prouver.</p></div>
   <section class="ways" aria-label="Les types de missions" style="margin-bottom:40px">
@@ -1823,3 +1824,13 @@ window.addEventListener("hashchange", route);
 if (window.claude && window.claude.hot) window.claude.hot.snapshot(() => ({ hash: location.hash }));
 const start = data => { if (data && data.hash && !location.hash) history.replaceState(null, "", data.hash); route(); };
 window.claude && window.claude.hot && window.claude.hot.ready ? window.claude.hot.ready(start) : start((window.claude && window.claude.hot && window.claude.hot.data) || {});
+
+/* sauvegarde en ligne (cloud.js) */
+if (window.BipCloud) BipCloud.init({
+  game: "bip-agence",
+  getStore: () => store,
+  setStore: s => { store = s; },
+  empty: () => ({ progress: {}, drafts: {}, teacher: false }),
+  persist: () => { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* rien */ } },
+  refresh: () => { updateStats(); if (!current) route(); }
+});

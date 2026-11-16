@@ -33,6 +33,12 @@ Il apparaît quand les 47 missions sont terminées : un encart jaune sur l'accue
 
 À la fin, l'élève exporte `index.html`, `style.css` et `script.js`, plus une fiche portfolio qui explique ce qu'il a codé.
 
+## La sauvegarde en ligne
+
+Sans compte, la progression reste dans le navigateur. Avec un compte (**e-mail + mot de passe**, bouton « Se connecter » en haut), elle est enregistrée en ligne dans une base Supabase et l'élève la retrouve sur n'importe quel ordinateur. Le même compte sert pour Mission Bip et Bip Agence. Chaque élève ne peut lire et modifier que sa propre progression.
+
+Rappel aux élèves : noter son e-mail et son mot de passe, et se déconnecter en partant d'un ordinateur de l'école.
+
 ## Pour le formateur
 
 Carnet › Options › **Mode formateur** (code : `itecom`). Il débloque toutes les missions et le projet bonus, et donne accès aux solutions.
@@ -44,6 +50,7 @@ La progression est enregistrée dans le navigateur de l'élève (`localStorage`)
 ```
 index.html
 css/style.css
+js/sauvegarde.js          la sauvegarde en ligne (compte e-mail + mot de passe)
 js/missions.js            les clients et les missions
 js/missions-formation.js  les deux formations et leurs missions
 js/projets.js             le projet bonus : étapes, objectifs, solutions
