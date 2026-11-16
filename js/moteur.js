@@ -19,7 +19,6 @@ const chLabel = n => { const c = CHAPTERS.find(x => x.n === n); if (!c) return "
 const KEY = "bip-agence-v1";
 let store = { progress: {}, drafts: {}, teacher: false };
 try { const raw = localStorage.getItem(KEY); if (raw) store = Object.assign(store, JSON.parse(raw)); } catch (e) { /* jeu sans sauvegarde */ }
-delete store.projet; // ancien projet fil rouge, retiré du jeu
 function save() { try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* rien */ } }
 
 let current = null, session = null, liveRun = null, silent = false;
@@ -419,8 +418,10 @@ function toast(msg) {
    NAVIGATION
    ===================================================================== */
 function setView(name) {
-  ["map", "level", "notebook"].forEach(v => { $("#view-" + v).hidden = v !== name; });
-  const cur = { "nav-map": name === "map", "nav-notebook": name === "notebook", "nav-sandbox": name === "level" && !!(current && current.sandbox) };
+  ["map", "level", "notebook", "project"].forEach(v => { $("#view-" + v).hidden = v !== name; });
+  refreshProjectNav();
+  if (name !== "project") $("#view-project").innerHTML = "";
+  const cur = { "nav-map": name === "map", "nav-notebook": name === "notebook", "nav-sandbox": name === "level" && !!(current && current.sandbox), "nav-project": name === "project" };
   Object.entries(cur).forEach(([id, on]) => { const b = $("#" + id); if (on) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); });
   if (name !== "level") liveRun = null;
   window.scrollTo(0, 0);
@@ -429,6 +430,7 @@ function setHash(h) { if (location.hash !== "#" + h) history.replaceState(null, 
 function route() {
   const h = location.hash.slice(1);
   if (h === "carnet") return showNotebook();
+  if (h === "projet") return showProject();
   if (h === SANDBOX.id) return openLevel(SANDBOX.id);
   if (h.startsWith("mission-")) { const id = h.slice(8); const i = levelIndex(id); if (i >= 0 && isUnlocked(i)) return openLevel(id); }
   showMap();
@@ -439,6 +441,7 @@ function updateStats() {
   $("#stat-done").textContent = LEVELS.filter(l => isDone(l.id)).length;
   $("#stat-total").textContent = LEVELS.length;
   $("#brand-bip").innerHTML = bipSVG();
+  refreshProjectNav();
 }
 
 /* =====================================================================
@@ -458,7 +461,8 @@ function showMap() {
       <h1>Bip <span>Agence</span></h1>
       <p class="lead">Tu entres en stage dans l’agence de Bip. Neuf clients, de la boulangerie au réseau social, attendent leur site, et deux formations internes t’apprennent à lire les accolades et à trouver le chemin vers une donnée. Ici, on ne recopie pas : on <strong>observe</strong> le code s’exécuter, on <strong>prédit</strong>, on <strong>explique</strong>. À la fin, tu sais pourquoi chaque ligne est là.</p>
       <div class="hero-actions">
-        ${nxt ? `<button class="btn btn-primary" type="button" data-open="${nxt.id}">${nb ? "Continuer" : "Commencer le stage"} : mission ${levelIndex(nxt.id) + 1}</button>` : `<button class="btn btn-primary" type="button" data-open="${SANDBOX.id}">Stage validé ! Ouvrir le bac à sable</button>`}
+        ${nxt ? `<button class="btn btn-primary" type="button" data-open="${nxt.id}">${nb ? "Continuer" : "Commencer le stage"} : mission ${levelIndex(nxt.id) + 1}</button>` : projectOpen() ? `<button class="btn btn-primary" type="button" id="hero-project">${proj() ? "Mon projet bonus" : "Stage validé ! Projet bonus"}</button>` : ""}
+        ${!nxt ? `<button class="btn" type="button" data-open="${SANDBOX.id}">Bac à sable</button>` : ""}
       </div>
       <div class="progress">
         <div class="progress-bar" role="progressbar" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100" aria-label="Progression"><span style="width: ${pct}%"></span></div>
@@ -467,6 +471,7 @@ function showMap() {
     </div>
     <div class="hero-bip"><div class="bob">${bipSVG(nb === LEVELS.length ? "happy" : null)}</div><p class="kicker" style="margin:0">Bip · ton maître de stage</p></div>
   </section>
+  ${projectBlockHTML()}
   <div class="section-title"><h2>Huit façons d’apprendre</h2><p>Chaque client mélange ces missions.</p></div>
   <section class="howto six" aria-label="Types de missions">
     <div><span class="type-chip type-observe">Observer</span><p>Le code s’exécute <strong>ligne par ligne</strong>. Tu regardes la mémoire changer, puis tu réponds.</p></div>
@@ -510,6 +515,7 @@ function openLevel(id) {
   const L = id === SANDBOX.id ? SANDBOX : LEVELS.find(l => l.id === id);
   if (!L) return showMap();
   current = L;
+  $("#view-project").innerHTML = "";
   session = { hints: 0, attempts: 0, checkWrong: 0, teacherUsed: false, results: null, answers: {}, checkAnswers: {}, predictTries: 0, errLine: null, stepLine: null, stepRun: null };
   setHash(L.sandbox ? SANDBOX.id : "mission-" + L.id);
   const i = levelIndex(L.id);
@@ -618,8 +624,8 @@ function benchHTML(L) {
 }
 
 function selectTab(name) {
-  document.querySelectorAll("#view-level .tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
-  document.querySelectorAll("#view-level .results .panel").forEach(p => { if (p.parentElement.querySelector(".tabs")) p.hidden = p.id !== "panel-" + name; });
+  document.querySelectorAll("#view-level .tab, #view-project .tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  document.querySelectorAll("#view-level .results .panel, #view-project .results .panel").forEach(p => { if (p.parentElement.querySelector(".tabs")) p.hidden = p.id !== "panel-" + name; });
 }
 
 function setupLevel(L) {
@@ -999,16 +1005,18 @@ function success(L) {
   if (session.teacherUsed) stars = 1;
   const before = store.progress[L.id];
   const chBefore = chapterDone(L.ch);
+  const allBefore = allMissionsDone();
   store.progress[L.id] = { stars: Math.max(before ? before.stars : 0, stars) };
   save(); updateStats();
   const delivered = !chBefore && chapterDone(L.ch);
   const all = LEVELS.every(l => isDone(l.id));
   const i = levelIndex(L.id), next = LEVELS[i + 1], ch = CHAPTERS.find(c => c.n === L.ch);
+  refreshProjectNav();
   $("#dialog").innerHTML = `
     <div class="dialog-top">${bipSVG("happy")}<div><p class="card-kicker">Mission ${i + 1} réussie</p><h2 id="modal-title">${all ? "Stage validé !" : "Bien joué !"}</h2><div class="big-stars" aria-label="${stars} étoiles sur 3">${starsHTML(stars)}</div></div></div>
     ${delivered ? `<p class="new-piece">Projet livré au client ${esc(ch.client)} ! ${ch.n < 9 ? "Un nouveau client t’attend." : ""}</p>` : ""}
+    ${all && !allBefore && !proj() ? `<div class="new-piece bonus-piece"><p><strong>Bonus débloqué : le projet portfolio.</strong> Tu as fait toutes les missions. Si tu veux, mets en application ce que tu as vu : trois clients de l’agence attendent un site, une appli ou une boutique, et tu codes tout le JavaScript.</p><button class="btn btn-small" type="button" id="modal-proj">Voir le projet bonus</button></div>` : ""}
     <div><p class="mini-label">Ce que tu as compris</p><p>${md(L.debrief)}</p></div>
-    ${all ? `<p class="new-piece">Tu as vu tout le JavaScript du stage. Prochaine étape : le site <strong>Valmont</strong>, avec ton cours de la séance 07. Tu y retrouveras chaque notion : données, cartes, filtres, formulaire.</p>` : ""}
     ${stars < 3 ? `<p style="color:var(--ink-soft);font-size:.92rem">${isCodeType(L) ? "3 étoiles : sans indice, et toutes les explications justes du premier coup." : "3 étoiles : tout juste du premier coup."} Tu peux rejouer la mission plus tard.</p>` : ""}
     <div class="dialog-actions">
       <button class="btn btn-ghost" type="button" id="modal-stay">Rester ici</button>
@@ -1017,6 +1025,7 @@ function success(L) {
   $("#modal").hidden = false;
   const close = () => { $("#modal").hidden = true; };
   $("#modal-stay").addEventListener("click", close);
+  if ($("#modal-proj")) $("#modal-proj").addEventListener("click", () => { close(); showProject(); });
   if ($("#modal-next")) { $("#modal-next").addEventListener("click", () => { close(); openLevel(next.id); }); $("#modal-next").focus(); }
   if ($("#modal-map")) { $("#modal-map").addEventListener("click", () => { close(); showMap(); }); $("#modal-map").focus(); }
   confetti(delivered || all ? 160 : 70);
@@ -1370,6 +1379,375 @@ function runPath(L) {
 }
 
 /* =====================================================================
+   ESPACE « MON PROJET » (bonus, ouvert quand toutes les missions sont faites)
+   ===================================================================== */
+const STEP_CACHE = {};
+const projSteps = type => STEP_CACHE[type] || (STEP_CACHE[type] = projectSteps(type));
+function migrateProject() {
+  const p = store.projet; if (!p || p.v === 2 || !PROJECT_TYPES[p.type]) return;
+  const P = PROJECT_TYPES[p.type];
+  p.files.html = P.html; p.files.css = P.css; p.v = 2;
+  try { localStorage.setItem(KEY, JSON.stringify(store)); } catch (e) { /* sans sauvegarde */ }
+}
+migrateProject();
+const proj = () => store.projet || null;
+const allMissionsDone = () => LEVELS.every(l => isDone(l.id));
+const projectOpen = () => !!(store.teacher || allMissionsDone() || proj());
+function refreshProjectNav() { const b = $("#nav-project"); if (b) b.hidden = !projectOpen(); }
+const stepDone = n => !!(proj() && proj().steps && proj().steps[n]);
+const allStepsDone = () => !!proj() && projSteps(proj().type).every(s => stepDone(s.n));
+function stepUnlocked(n) {
+  const p = proj(); if (!p) return false;
+  if (store.teacher) return true;
+  if (n === 8) return allStepsDone();
+  return n === 1 || stepDone(n - 1);
+}
+function nextStepNumber() {
+  const p = proj(); if (!p) return 1;
+  const s = projSteps(p.type).find(x => !stepDone(x.n));
+  return s ? s.n : 8;
+}
+function missionLabel(id) { const i = levelIndex(id); const l = LEVELS[i]; return l ? "mission " + (i + 1) + " « " + l.title + " » (" + chLabel(l.ch) + " · " + CHAPTERS.find(c => c.n === l.ch).client + ")" : id; }
+const PROJECT_LEVEL = () => ({ id: "projet", type: "project", stage: proj().files.html, prelude: "" });
+
+/* ---------- coloration HTML / CSS ---------- */
+function hlHTML(src) {
+  const re = /(<!--[\s\S]*?-->)|(<\/?[a-zA-Z][\w-]*)|("[^"]*")|(\s[a-zA-Z-]+(?==))|(\/?>)/g;
+  let out = "", last = 0, m;
+  while ((m = re.exec(src))) { out += esc(src.slice(last, m.index)); const cls = m[1] ? "c" : m[2] ? "k" : m[3] ? "s" : m[4] ? "p" : "k"; out += `<span class="t-${cls}">${esc(m[0])}</span>`; last = re.lastIndex; }
+  return out + esc(src.slice(last));
+}
+function hlCSS(src) {
+  const re = /(\/\*[\s\S]*?\*\/)|("[^"]*")|(--[\w-]+)|(#[0-9a-fA-F]{3,8}\b)|([a-z-]+)(?=\s*:[^:])|(\b\d+(?:\.\d+)?(?:px|rem|em|%|s|fr|vh)?\b)|([.#][\w-]+)|(@[\w-]+)|([{}])/g;
+  let out = "", last = 0, m;
+  while ((m = re.exec(src))) { out += esc(src.slice(last, m.index)); const cls = m[1] ? "c" : m[2] ? "s" : m[3] ? "p" : m[4] ? "n" : m[5] ? "p" : m[6] ? "n" : m[7] ? "f" : m[8] ? "k" : "b0"; out += `<span class="t-${cls}">${esc(m[0])}</span>`; last = re.lastIndex; }
+  return out + esc(src.slice(last));
+}
+
+/* ---------- choix du projet ---------- */
+function showProject(n) {
+  if (!projectOpen()) { toast("Le projet bonus s’ouvre quand tu as terminé les " + LEVELS.length + " missions."); return showMap(); }
+  current = { id: "projet", type: "project" };
+  setHash("projet");
+  $("#view-level").innerHTML = "";
+  const p = proj();
+  if (!p) return showProjectChoice();
+  openStep(n || nextStepNumber());
+}
+function clientBriefHTML(P, open) {
+  const keys = Object.keys(P.content[0]);
+  return `<details class="pbrief" ${open ? "open" : ""}><summary><span class="mini-label">Brief client</span> <b>${esc(P.label)}</b> · ${esc(P.brandSlogan)}</summary>
+    <p>${esc(P.client)}</p>
+    <dl class="pbrief-facts"><div><dt>Nom</dt><dd><code>${esc(P.brand)}</code></dd></div><div><dt>Slogan</dt><dd><code>${esc(P.brandSlogan)}</code></dd></div><div><dt>Catégories</dt><dd>${P.categories.map(c => `<code>${esc(c)}</code>`).join(" ")}</dd></div></dl>
+    <p class="mini-label">Les contenus envoyés par le client</p>
+    <div class="pbrief-scroll"><table class="pbrief-table"><thead><tr>${keys.map(k => `<th>${esc(k)}</th>`).join("")}</tr></thead><tbody>${P.content.map(it => `<tr>${keys.map(k => `<td>${esc(typeof it[k] === "boolean" ? (it[k] ? "true (fait)" : "false") : String(it[k]))}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+    <p class="page-note">À toi de transformer ce tableau en tableau d’objets JavaScript, en tapant le code toi-même.</p></details>`;
+}
+function showProjectChoice() {
+  $("#view-project").innerHTML = `
+    <div class="level-head"><button class="btn btn-small btn-ghost" type="button" data-go="map">← Clients</button><div class="level-title"><span class="where">Bonus · projet portfolio</span><h2>Choisis ton projet</h2></div></div>
+    <div class="says" style="max-width:820px;margin-bottom:20px"><div>${bipSVG()}</div><p class="bubble">Trois clients de l’agence attendent leur projet. Le <strong>HTML</strong> et le <strong>CSS</strong> sont déjà faits par l’équipe design : toi, tu codes <strong>tout le JavaScript</strong>, étape par étape, avec chaque notion vue dans les missions. À la fin : un projet qui marche vraiment, à mettre dans ton portfolio, et une fiche qui explique ce que tu as codé. Essaie les démos ci-dessous : c’est le résultat final.</p></div>
+    <div class="proj-choices">${Object.entries(PROJECT_TYPES).map(([k, P]) => `
+      <article class="chap proj-choice">
+        <div class="demo-wrap"><div class="demo-bar"><span class="mini-label">Démo · le résultat final</span><span>clique, filtre, teste</span></div><div class="demo-host" data-demo="${k}"></div></div>
+        <p class="client-kind">${esc(P.kind)}</p>
+        <h3>${esc(P.label)}</h3>
+        <p><strong>${esc(P.brandSlogan)}.</strong> ${esc(P.client)}</p>
+        <div><p class="mini-label">Ce que ton JavaScript va faire</p><ul class="proj-list">${P.features.map(i => `<li>${esc(i)}</li>`).join("")}</ul></div>
+        <button class="btn btn-primary" type="button" data-choose="${k}">Je prends ${esc(P.label)}</button>
+      </article>`).join("")}</div>
+    <p class="rule" style="margin-top:20px"><b>Bon à savoir</b> Dans le jeu, le HTML et le CSS sont en lecture seule : lis-les pour trouver les classes et les id dont ton JS a besoin. À la fin, dans VS Code, tu pourras changer les couleurs pour ton portfolio. Tu peux changer de projet plus tard, mais tu repartiras de zéro.</p>`;
+  setView("project");
+  document.querySelectorAll("[data-demo]").forEach(mountDemo);
+}
+function mountDemo(host) {
+  const P = PROJECT_TYPES[host.dataset.demo];
+  const root = host.shadowRoot || host.attachShadow({ mode: "open" });
+  root.innerHTML = `<style>:host{display:block}.proj-page{background:#fff}.app{min-height:0!important}${P.css}</style><div class="proj-page">${P.html}</div>`;
+  guardShadow(root);
+  const page = root.querySelector(".proj-page");
+  const L = { id: "demo-" + host.dataset.demo, type: "project", stage: P.html, prelude: "" };
+  silent = true; try { execute(L, solutionAt(P.js, 7, "js"), null, page, {}); } catch (e) { /* démo */ } silent = false;
+}
+function guardShadow(root) {
+  if (root._guard) return; root._guard = true;
+  root.addEventListener("submit", ev => { if (!ev.defaultPrevented) { ev.preventDefault(); toast("Sans `event.preventDefault()`, la page se serait rechargée et tout aurait été effacé !"); } });
+  root.addEventListener("click", ev => {
+    const a = ev.target.closest && ev.target.closest("a[href]"); if (!a) return;
+    ev.preventDefault();
+    const h = a.getAttribute("href");
+    if (h.startsWith("#") && h.length > 1) { const t = root.getElementById(h.slice(1)); if (t) t.scrollIntoView({ behavior: "smooth", block: "start" }); }
+    else toast("Les liens ne s’ouvrent pas dans l’aperçu.");
+  });
+}
+function chooseProject(type) {
+  const P = PROJECT_TYPES[type];
+  store.projet = { v: 2, type, files: { html: P.html, css: P.css, js: "// ===== Étape 1 : les données =====\n// Écris ici nomProjet, slogan et le tableau " + P.data + ",\n// avec les contenus du brief client (à gauche).\n\n" }, steps: {}, checklist: {}, learned: "", name: "" };
+  save(); updateStats();
+  toast("C’est parti : " + P.label + " !");
+  showProject(1);
+}
+
+/* ---------- une étape ---------- */
+function openStep(n) {
+  const p = proj(); const P = PROJECT_TYPES[p.type]; const steps = projSteps(p.type);
+  current = { id: "projet", type: "project" };
+  session = { hints: 0, checkWrong: 0, teacherUsed: false, errLine: null, stepLine: null, projStep: n, file: (session && session.file) || "js", checkAnswers: {} };
+  setHash("projet");
+  $("#view-level").innerHTML = "";
+  const step = steps[n - 1];
+  const chips = steps.map(s => `<button type="button" class="pstep ${stepDone(s.n) ? "done" : ""} ${s.n === n ? "cur" : ""}" data-step="${s.n}" ${stepUnlocked(s.n) || stepDone(s.n) ? "" : "disabled"} title="${esc(s.title)}">${stepDone(s.n) ? "✓" : s.n}<span>${esc(s.title)}</span></button>`).join("") + `<button type="button" class="pstep ${n === 8 ? "cur" : ""} ${allStepsDone() ? "done" : ""}" data-step="8" ${stepUnlocked(8) ? "" : "disabled"}>★<span>Finaliser</span></button>`;
+  const head = `<div class="level-head"><button class="btn btn-small btn-ghost" type="button" data-go="map">← Clients</button><div class="level-title"><span class="where">Projet bonus · ${esc(P.label)}</span><h2>${esc(p.name || "Mon projet")}</h2></div><button class="btn btn-small btn-ghost" type="button" id="proj-change">Changer de projet</button></div><nav class="psteps" aria-label="Étapes du projet">${chips}</nav>`;
+  if (n === 8) { $("#view-project").innerHTML = head + finalHTML(); setView("project"); bindFinal(); return; }
+  const locked = !stepUnlocked(n) && !stepDone(n);
+  const brief = `
+    <div class="says"><div id="says-bip">${bipSVG()}</div><p class="bubble">${md(step.intro)}</p></div>
+    <section class="card mission"><p class="card-kicker">Étape ${n} / 7 · ${esc(step.notion)}</p><h3>${esc(step.title)}</h3><ol class="steps">${step.instructions.map(s => `<li>${md(s)}</li>`).join("")}</ol>
+      <p class="rule"><b>Agence</b> Le HTML et le CSS sont fournis : tu ne touches qu’à script.js, sans copier-coller. Pour valider l’étape, tu devras expliquer ton code avec tes mots : ce texte ira dans ta fiche portfolio.</p></section>
+    <section class="card">${clientBriefHTML(P, n === 1)}</section>
+    ${step.diagrams ? `<section class="card schema"><p class="card-kicker">Le schéma · comment ça marche</p>${step.diagrams.map(diagramHTML).join("")}</section>` : ""}
+    ${step.lesson ? `<section class="card lesson"><p class="card-kicker">Nouveau</p><p>${md(step.lesson.what)}</p><pre class="code-block">${highlight(step.lesson.code)}</pre><dl class="pieces">${step.lesson.pieces.map(([k, d]) => `<div><dt><code>${esc(k)}</code></dt><dd>${md(d)}</dd></div>`).join("")}</dl><div class="trap"><p class="mini-label">Piège à éviter</p><p>${md(step.lesson.trap)}</p></div></section>` : ""}
+    <section class="card help" id="help" hidden><p class="card-kicker">Indices</p><ol class="hint-list" id="hint-list"></ol><div id="solution-box" hidden></div></section>`;
+  const bench = locked
+    ? `<section class="card mission lockcard"><p class="card-kicker">Étape verrouillée</p><h3>Pas encore…</h3><p>Valide d’abord l’étape ${n - 1} : chaque étape s’appuie sur la précédente.</p><div><button class="btn btn-primary" type="button" data-step="${n - 1}">Aller à l’étape ${n - 1}</button></div></section>${previewOnlyHTML()}`
+    : `<div class="filetabs" role="tablist">${["html", "css", "js"].map(f => `<button class="filetab" role="tab" type="button" data-file="${f}" aria-selected="${session.file === f}">${{ html: "index.html <small>lecture</small>", css: "style.css <small>lecture</small>", js: "script.js <small>ton code</small>" }[f]}</button>`).join("")}</div>
+      <div id="editor-slot"></div>
+      <div class="actions">
+        <button class="btn btn-primary" type="button" id="prun">▶ Lancer</button>
+        <button class="btn btn-yellow" type="button" id="ptrace">Pas à pas</button>
+        <button class="btn" type="button" id="phint">Indice (${step.hints.length})</button>
+        ${store.teacher ? `<button class="btn btn-ghost" type="button" id="psolution">Solution (formateur)</button>` : ""}
+        <span class="kbd">Ctrl + Entrée pour lancer</span>
+      </div>
+      <div id="check-slot"></div>
+      <div class="results">${tabsHTML(["goals", "apercu", "console", "memory", "step"])}${panelsHTML(["goals", "apercu", "console", "memory", "step"])}</div>`;
+  $("#view-project").innerHTML = head + `<div class="level-grid"><div class="brief">${brief}</div><div class="workbench">${bench}</div></div>`;
+  setView("project");
+  if (locked) { runProject(true); return; }
+  ensureStepHeader(n, step);
+  $("#panel-apercu").innerHTML = previewInnerHTML();
+  mountEditor(session.file);
+  renderStepGoals(null, step);
+  runProject(true);
+  selectTab("apercu");
+}
+function ensureStepHeader(n, step) {
+  const p = proj();
+  if (!new RegExp("// ===== Étape " + n + "\\b").test(p.files.js)) { p.files.js = p.files.js.replace(/\s*$/, "") + "\n\n// ===== Étape " + n + " : " + step.title.toLowerCase() + " =====\n\n"; save(); }
+}
+function previewInnerHTML() {
+  return `<div class="device-bar"><span class="mini-label">Aperçu</span><button type="button" class="btn btn-small ${session.device !== "desktop" ? "on" : ""}" data-device="mobile">Mobile</button><button type="button" class="btn btn-small ${session.device === "desktop" ? "on" : ""}" data-device="desktop">Ordinateur</button></div><div class="proj-frame ${session.device === "desktop" ? "desktop" : "mobile"}"><div id="proj-host"></div></div><p class="page-note">Ton site, tel qu’il s’affichera. Tu peux cliquer et taper dedans.</p>`;
+}
+function previewOnlyHTML() { return `<div class="results"><div class="panel" id="panel-apercu" style="max-height:none">${previewInnerHTML()}</div><div id="console-out" hidden></div><div id="memory-out" hidden></div></div>`; }
+function mountPreview() {
+  const host = $("#proj-host"); if (!host) return document.createElement("div");
+  const root = host.shadowRoot || host.attachShadow({ mode: "open" });
+  root.innerHTML = `<style>:host{display:block}.proj-page{min-height:100%;background:#fff}.app{min-height:0!important}${proj().files.css}</style><div class="proj-page">${proj().files.html}</div>`;
+  guardShadow(root);
+  fitPreview();
+  return root.querySelector(".proj-page");
+}
+function fitPreview() {
+  const fr = $(".proj-frame"), host = $("#proj-host"); if (!fr || !host) return;
+  host.style.zoom = "";
+  if (fr.classList.contains("desktop")) {
+    const z = Math.min(1, (fr.clientWidth - 6) / 1100);
+    host.style.width = "1100px"; host.style.transformOrigin = "0 0"; host.style.transform = "scale(" + z + ")";
+    host.style.marginBottom = -(host.offsetHeight * (1 - z)) + "px";
+  } else { host.style.width = ""; host.style.transform = ""; host.style.marginBottom = ""; }
+}
+window.addEventListener("resize", () => fitPreview());
+function mountEditor(file) {
+  session.file = file;
+  const ro = file !== "js";
+  document.querySelectorAll(".filetab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.file === file)));
+  $("#editor-slot").innerHTML = ro ? editorHTML(true).replace(/<p class="editor-tip">[\s\S]*?<\/p>/, `<p class="editor-tip">${file === "html" ? "<b>index.html · fourni par l’agence, lecture seule.</b> Cherche ici les classes (<code>.grille</code>, <code>.filtre</code>…) et les id (<code>#nom</code>…) que ton JavaScript va attraper avec <code>querySelector</code>." : "<b>style.css · fourni par l’agence, lecture seule.</b> Repère les classes que ton JS ajoute ou enlève (<code>.sombre</code>, <code>.aime</code>, <code>.fait</code>…) : c’est ici qu’elles prennent leur look."}</p>`) : editorHTML(false);
+  const ta = $("#code"); ta._lang = file; ta.value = proj().files[file];
+  if (!ro) ta._onChange = v => { proj().files[file] = v; save(); };
+  bindEditor(ta, ro);
+}
+
+/* ---------- lancer le projet ---------- */
+function runProject(quiet) {
+  const p = proj(); if (!p) return;
+  const n = session.projStep; const steps = projSteps(p.type); const step = steps[n - 1];
+  const L = PROJECT_LEVEL(); const code = p.files.js;
+  const page = mountPreview();
+  silent = true; silentErrors.length = 0;
+  const st = document.createElement("div"); st.innerHTML = p.files.html;
+  const runs = [execute(L, code, null, st, {})];
+  silent = false; liveRun = null;
+  const main = execute(L, code, null, page, { live: true });
+  if (typeof V(runs[0], "nomProjet") === "string" && V(runs[0], "nomProjet").trim() && p.name !== V(runs[0], "nomProjet")) { p.name = V(runs[0], "nomProjet"); save(); const h = $("#view-project .level-title h2"); if (h) h.textContent = p.name; }
+  if (!$("#goals")) return;
+  if (main.error && session.file !== "js") mountEditor("js");
+  showRun(main, code);
+  const c = { runs, code, L, main, P: PROJECT_TYPES[p.type] };
+  silent = true;
+  const res = g => { let r; try { r = g.test(c); } catch (e) { r = false; } return { ok: r === true, detail: typeof r === "string" ? r : null }; };
+  const results = step.goals.map(res);
+  if (n > 1) {
+    let reg = true;
+    for (const s of steps.slice(0, n - 1)) { for (const g of s.goals) { const r = res(g); if (!r.ok) { reg = "L’étape " + s.n + " ne marche plus : « " + g.label.replace(/`/g, "") + " »" + (r.detail ? " · " + r.detail : "") + "."; break; } } if (reg !== true) break; }
+    results.push({ ok: reg === true, detail: reg === true ? null : reg });
+  }
+  silent = false;
+  session.results = results;
+  if (main.error) {
+    renderStepGoals(null, step);
+    const ln = errorLine(main.error, code, main.preludeLines);
+    $("#goals").insertAdjacentHTML("afterbegin", `<li class="goal ko"><span class="goal-icon" aria-hidden="true">!</span><span><span>Ton code s’arrête ${ln ? "à la ligne " + ln : "sur une erreur"}.</span><span class="goal-detail">Tout ce qui est après n’a pas été lu. Corrige d’abord cette erreur (onglet Console), relance, et les objectifs seront vérifiés.</span></span></li>`);
+  } else renderStepGoals(results, step);
+  $("#check-slot").innerHTML = "";
+  if (quiet) return;
+  if (main.error) { selectTab("console"); setMood("oops"); }
+  else if (results.every(r => r.ok)) { setMood("happy"); showStepCheck(step); }
+  else { selectTab("goals"); setMood("think"); }
+}
+function renderStepGoals(results, step) {
+  const goals = step.goals.map(g => g.label).concat(session.projStep > 1 ? ["Les étapes précédentes marchent toujours"] : []);
+  $("#goals").innerHTML = goals.map((label, i) => { const r = results && results[i]; const st = !r ? "todo" : r.ok ? "ok" : "ko"; return `<li class="goal ${st}"><span class="goal-icon" aria-hidden="true">${st === "ok" ? "✓" : st === "ko" ? "✗" : "○"}</span><span><span>${md(label)}</span>${r && r.detail ? `<span class="goal-detail">${md(r.detail)}</span>` : ""}</span></li>`; }).join("");
+  const okN = results ? results.filter(r => r.ok).length : 0;
+  const b = $("#badge-goals"); b.textContent = okN + " / " + goals.length; b.className = "badge" + (results && okN === goals.length ? " green" : "");
+  $("#goals-note").innerHTML = "Le jeu teste ton projet avec **tes** données. Clique sur **Lancer** après chaque modification.".replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+}
+function showStepCheck(step) {
+  session.checkAnswers = {};
+  const prev = (proj().steps[step.n] || {}).explain || "";
+  $("#check-slot").innerHTML = `<section class="card check-card" id="check-card"><p class="card-kicker">Ça marche ! Dernière étape</p><h3>Explique ton code</h3>${questionsHTML(step.check, "c")}
+    <label class="explain-label" for="explain">${md(step.explain)} <small>(au moins 2 phrases : ce texte ira dans ta fiche portfolio)</small></label>
+    <textarea id="explain" class="explain" rows="4" placeholder="Avec tes mots, comme si tu l’expliquais à quelqu’un qui ne code pas.">${esc(prev)}</textarea>
+    <div class="quiz-foot"><button class="btn btn-primary" type="button" id="c-step">Valider l’étape</button><span id="c-msg" aria-live="polite"></span></div></section>`;
+  bindQuestions(step.check, "c");
+  $("#c-step").addEventListener("click", () => {
+    const good = gradeQuestions(step.check, "c", session.checkAnswers); const msg = $("#c-msg");
+    if (good === null) { msg.textContent = "Réponds à toutes les questions."; return; }
+    if (good !== step.check.length) { session.checkWrong++; msg.textContent = "Une réponse n’est pas juste : relis ton code et réessaie."; return; }
+    const ex = $("#explain").value.trim();
+    if (ex.length < 60 || ex.split(/[.!?]/).filter(x => x.trim().length > 3).length < 2) { msg.textContent = "Écris au moins 2 vraies phrases pour expliquer ton code."; $("#explain").focus(); return; }
+    validateStep(step, ex);
+  });
+  $("#check-card").scrollIntoView({ block: "center", behavior: "smooth" });
+}
+function validateStep(step, explainText) {
+  const p = proj();
+  let stars = Math.max(1, 3 - (session.hints > 0 ? 1 : 0) - (session.checkWrong > 0 ? 1 : 0)); if (session.teacherUsed) stars = 1;
+  const before = p.steps[step.n];
+  p.steps[step.n] = { stars: Math.max(before ? before.stars : 0, stars), explain: explainText };
+  save(); updateStats();
+  const steps = projSteps(p.type); const next = steps[step.n];
+  const nextOpen = next ? stepUnlocked(next.n) : allStepsDone();
+  $("#dialog").innerHTML = `
+    <div class="dialog-top">${bipSVG("happy")}<div><p class="card-kicker">Projet · étape ${step.n} validée</p><h2 id="modal-title">${esc(step.title)} ✓</h2><div class="big-stars">${starsHTML(stars)}</div></div></div>
+    <div><p class="mini-label">Dans ta fiche portfolio</p><p class="quote">${esc(explainText)}</p></div>
+    ${next ? `<p class="new-piece">Étape ${next.n} disponible : ${esc(next.title)}</p>` : `<p class="new-piece">Les 7 étapes sont faites ! Place à la finalisation : export et fiche portfolio.</p>`}
+    <div class="dialog-actions"><button class="btn btn-ghost" type="button" id="modal-stay">Rester ici</button>
+      ${next ? `<button class="btn btn-primary" type="button" id="modal-go" data-step="${next.n}">Étape suivante →</button>` : `<button class="btn btn-primary" type="button" id="modal-go" data-step="8">Finaliser mon projet →</button>`}</div>`;
+  $("#modal").hidden = false;
+  $("#modal-stay").addEventListener("click", () => { $("#modal").hidden = true; });
+  $("#modal-go").addEventListener("click", () => { $("#modal").hidden = true; });
+  $("#modal-go").focus();
+  confetti(step.n === 7 ? 160 : 80);
+}
+
+/* ---------- finaliser : checklist, fiche portfolio, export ---------- */
+const CHECKLIST = ["J’ai mis les 6 contenus du brief client dans mes données", "Mon script.js est commenté : un commentaire au-dessus de chaque partie", "J’ai vérifié l’aperçu en mobile ET en ordinateur", "J’ai testé chaque bouton et le formulaire", "J’ai relu les textes (fautes, majuscules)", "J’ai ouvert le projet dans VS Code avec Live Server, sans erreur dans la console (F12)", "J’ai mis le projet en ligne et noté le lien", "Bonus : dans VS Code, j’ai changé les couleurs (style.css, partie 1) pour en faire mon projet"];
+function exportFiles() {
+  const p = proj();
+  const html = `<!DOCTYPE html>\n<html lang="fr">\n<head>\n  <meta charset="utf-8">\n  <meta name="viewport" content="width=device-width, initial-scale=1">\n  <title>${esc(p.name || "Mon projet")}</title>\n  <link rel="preconnect" href="https://fonts.googleapis.com">\n  <link href="${PROJECT_TYPES[p.type].fonts}" rel="stylesheet">\n  <link rel="stylesheet" href="style.css">\n  <script src="script.js" defer><\/script>\n</head>\n<body>\n${p.files.html.split("\n").map(l => "  " + l).join("\n")}\n</body>\n</html>\n`;
+  return { "index.html": html, "style.css": p.files.css, "script.js": p.files.js };
+}
+function ficheData() {
+  const p = proj(); const P = PROJECT_TYPES[p.type]; const steps = projSteps(p.type);
+  const st = document.createElement("div"); st.innerHTML = p.files.html;
+  silent = true; const r = execute(PROJECT_LEVEL(), p.files.js, null, st, {}); silent = false;
+  const data = V(r, P.data);
+  return { p, P, steps, name: V(r, "nomProjet") || p.name || "Mon projet", slogan: V(r, "slogan") || "", count: Array.isArray(data) ? data.length : 0 };
+}
+function ficheHTML() {
+  const f = ficheData();
+  return `<article class="fiche">
+    <p class="mini-label">${esc(f.P.kind)} · client fictif</p><h3>${esc(f.name)}</h3><p class="fiche-slogan">${esc(f.slogan)}</p>
+    <p><strong>Le projet :</strong> ${esc(f.P.pitch)}</p>
+    <p class="mini-label">Ce que fait mon projet</p><ul class="proj-list">${f.P.features.map(x => `<li>${esc(x)}</li>`).join("")}<li>${f.count} contenus, gérés depuis un tableau d’objets</li></ul>
+    <p class="mini-label">Ma part du travail</p><p>Projet d’agence pour un client fictif. HTML et CSS fournis par l’équipe design ; <strong>tout le JavaScript écrit par moi</strong>.</p>
+    <p class="mini-label">Technologies</p><div class="chips"><code>JavaScript</code>${f.steps.map(s => `<code>${esc(s.notion)}</code>`).join("")}</div>
+    <p class="mini-label">Comment je l’ai codé, étape par étape</p>
+    ${f.steps.map(s => `<div class="fiche-step"><b>${s.n}. ${esc(s.title)}</b><p>${esc((f.p.steps[s.n] || {}).explain || "(pas encore expliqué)")}</p></div>`).join("")}
+    ${f.p.learned ? `<p class="mini-label">Ce que j’ai appris</p><p>${esc(f.p.learned)}</p>` : ""}
+  </article>`;
+}
+function ficheText() {
+  const f = ficheData();
+  return [f.name, f.slogan, "", "Projet : " + f.P.kind + " pour " + f.P.label + " (client fictif)", f.P.pitch, "", "Ma part : HTML et CSS fournis par l’équipe design, tout le JavaScript écrit par moi.", "", "Ce que fait mon projet :", ...f.P.features.map(x => "- " + x), "- " + f.count + " contenus, gérés depuis un tableau d’objets", "", "Notions JavaScript : " + f.steps.map(s => s.notion).join(" ; "), "", "Comment je l’ai codé :", ...f.steps.map(s => s.n + ". " + s.title + " : " + ((f.p.steps[s.n] || {}).explain || "")), ...(f.p.learned ? ["", "Ce que j’ai appris : " + f.p.learned] : [])].join("\n");
+}
+function finalHTML() {
+  const p = proj(); const files = exportFiles();
+  return `<div class="level-grid"><div class="brief">
+    <div class="says"><div id="says-bip">${bipSVG("happy")}</div><p class="bubble">Ton projet est construit. Dernière ligne droite : on le peaufine, on le sort du jeu pour l’ouvrir dans VS Code, on le met en ligne, et on prépare sa fiche pour ton portfolio.</p></div>
+    <section class="card mission"><p class="card-kicker">Avant de publier</p><ul class="checklist">${CHECKLIST.map((c, i) => `<li><label><input type="checkbox" data-check="${i}" ${p.checklist && p.checklist[i] ? "checked" : ""}> ${esc(c)}</label></li>`).join("")}</ul></section>
+    <section class="card"><p class="card-kicker">Ce que j’ai appris</p><label for="learned" class="explain-label">En quelques phrases : ce que tu sais faire maintenant, ce qui t’a posé problème, comment tu l’as résolu.</label><textarea id="learned" class="explain" rows="5">${esc(p.learned || "")}</textarea></section>
+    <section class="card"><p class="card-kicker">Sortir le projet du jeu</p><ol class="steps">
+      <li>Sur ton ordinateur, crée un dossier à ton nom de projet.</li>
+      <li>Dans VS Code, crée <code>index.html</code>, <code>style.css</code> et <code>script.js</code> dans ce dossier.</li>
+      <li>Copie chaque fichier depuis la colonne de droite et colle-le dans le bon fichier.</li>
+      <li>Ouvre <code>index.html</code> avec Live Server. Ouvre la console (F12) : aucune ligne rouge ne doit apparaître.</li>
+      <li>Mets le dossier en ligne avec la solution vue en cours (glisser-déposer), puis ajoute le lien et la fiche à ton portfolio.</li></ol></section>
+  </div><div class="workbench">
+    <section class="card"><p class="card-kicker">Ma fiche portfolio</p>${ficheHTML()}<div class="quiz-foot"><button class="btn btn-primary" type="button" id="copy-fiche">Copier le texte de la fiche</button></div></section>
+    <section class="card"><p class="card-kicker">Mes fichiers</p>${Object.entries(files).map(([name, content]) => `<details class="export"><summary><b>${name}</b> <span>${content.split("\n").length} lignes</span></summary><pre class="code-block">${name.endsWith(".js") ? highlight(content) : name.endsWith(".css") ? hlCSS(content) : hlHTML(content)}</pre></details><div class="quiz-foot"><button class="btn btn-small" type="button" data-copy-file="${name}">Copier ${name}</button></div>`).join("")}</section>
+    <div class="results"><div class="panel" id="panel-apercu" style="max-height:none">${previewInnerHTML()}</div><div id="console-out" hidden></div><div id="memory-out" hidden></div></div>
+  </div></div>`;
+}
+function bindFinal() {
+  const p = proj();
+  document.querySelectorAll("[data-check]").forEach(cb => cb.addEventListener("change", () => { p.checklist = p.checklist || {}; p.checklist[cb.dataset.check] = cb.checked; save(); }));
+  $("#learned").addEventListener("input", e => { p.learned = e.target.value; save(); });
+  $("#learned").addEventListener("change", () => { const w = $(".fiche"); if (w) w.outerHTML = ficheHTML(); });
+  session.projStep = 8;
+  runProject(true);
+}
+async function copyText(text, label) {
+  try { await navigator.clipboard.writeText(text); toast(label + " copié !"); }
+  catch (e) { const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select(); let ok = false; try { ok = document.execCommand("copy"); } catch (x) { ok = false; } ta.remove(); toast(ok ? label + " copié !" : "La copie automatique est bloquée ici : ouvre le fichier et sélectionne le texte à la main."); }
+}
+
+/* ---------- événements du projet ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.choose) { chooseProject(t.dataset.choose); return; }
+  if (t.dataset.step && !t.disabled) { showProject(+t.dataset.step); return; }
+  if (t.dataset.file) { mountEditor(t.dataset.file); return; }
+  if (t.dataset.device) { session.device = t.dataset.device; const fr = $(".proj-frame"); if (fr) fr.className = "proj-frame " + t.dataset.device; document.querySelectorAll("[data-device]").forEach(b => b.classList.toggle("on", b === t)); fitPreview(); return; }
+  if (t.dataset.copyFile) { copyText(exportFiles()[t.dataset.copyFile], t.dataset.copyFile); return; }
+  switch (t.id) {
+    case "prun": runProject(false); break;
+    case "ptrace": { const run = traceRun(PROJECT_LEVEL(), proj().files.js); selectTab("step"); if (session.file !== "js") mountEditor("js"); renderStepper(run, {}); break; }
+    case "phint": { const step = projSteps(proj().type)[session.projStep - 1]; if (session.hints >= step.hints.length) break; session.hints++; $("#help").hidden = false; $("#hint-list").innerHTML = step.hints.slice(0, session.hints).map(h => `<li>${md(h)}</li>`).join(""); const left = step.hints.length - session.hints; t.textContent = left ? `Indice (${left})` : "Plus d’indice"; t.disabled = !left; $("#help").scrollIntoView({ block: "nearest", behavior: "smooth" }); break; }
+    case "psolution": { const P = PROJECT_TYPES[proj().type], n = session.projStep; session.teacherUsed = true; $("#help").hidden = false; $("#solution-box").hidden = false; $("#solution-box").innerHTML = `<p class="mini-label">Solution complète jusqu’à l’étape ${n} (formateur)</p><pre class="code-block">${highlight(solutionAt(P.js, n, "js"))}</pre><button class="btn btn-small" type="button" id="psol-apply">Remplacer mes fichiers par la solution</button>`; break; }
+    case "psol-apply": { const P = PROJECT_TYPES[proj().type], n = session.projStep; proj().files.js = solutionAt(P.js, n, "js"); proj().files.html = P.html; proj().files.css = P.css; save(); mountEditor(session.file); runProject(true); toast("Solution chargée."); break; }
+    case "copy-fiche": copyText(ficheText(), "La fiche"); break;
+    case "proj-change": twoStep(t, "Tout recommencer ? Clique encore", () => { store.projet = null; save(); showProject(); }); break;
+  }
+});
+document.addEventListener("keydown", e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter" && current && current.id === "projet" && document.activeElement && document.activeElement.id === "code") { e.preventDefault(); e.stopPropagation(); runProject(false); } }, true);
+
+/* ---------- bloc « projet » sur la carte ---------- */
+function projectBlockHTML() {
+  const p = proj();
+  if (!projectOpen()) return "";
+  if (!p) return `<section class="proj-block"><div><p class="kicker">Bonus · projet portfolio</p><h2>Mets en application ce que tu as vu</h2><p>Tu as terminé toutes les missions. Si tu veux un projet de plus dans ton portfolio, trois clients de l’agence attendent : le HTML et le CSS sont prêts, tu codes tout le JavaScript, en 7 étapes.</p></div>
+    <div class="proj-mini">${Object.values(PROJECT_TYPES).map(P => `<div><b>${esc(P.label)}</b><small>${esc(P.kind)} · ${esc(P.short)}</small></div>`).join("")}</div>
+    <div><button class="btn btn-primary" type="button" id="map-project">Choisir mon projet</button></div></section>`;
+  const P = PROJECT_TYPES[p.type]; const steps = projSteps(p.type); const n = nextStepNumber();
+  const nextS = steps[n - 1];
+  const status = n === 8 ? "Les 7 étapes sont faites : finalise et exporte ton projet !" : `Étape ${n} : <strong>${esc(nextS.title)}</strong>`;
+  return `<section class="proj-block"><div><p class="kicker">Projet bonus · ${esc(P.label)}</p><h2>${esc(p.name || "Mon projet")}</h2><p>${status}</p></div>
+    <div class="psteps psteps-mini">${steps.map(s => `<span class="pstep ${stepDone(s.n) ? "done" : ""} ${s.n === n ? "cur" : ""}">${stepDone(s.n) ? "✓" : s.n}<span>${esc(s.title)}</span></span>`).join("")}</div>
+    <div><button class="btn btn-primary" type="button" id="map-project">Ouvrir mon projet</button></div></section>`;
+}
+
+/* =====================================================================
    ÉVÉNEMENTS GLOBAUX ET DÉMARRAGE
    ===================================================================== */
 document.addEventListener("click", e => {
@@ -1379,6 +1757,7 @@ document.addEventListener("click", e => {
   if (t.dataset.tab) { selectTab(t.dataset.tab); return; }
   switch (t.id) {
     case "run": runCode(); break;
+    case "hero-choose": case "hero-project": case "map-project": showProject(); break;
     case "trace": startTrace(); break;
     case "hint": showHint(); break;
     case "teacher-solution": teacherSolution(); break;
@@ -1391,6 +1770,7 @@ $("#brand").addEventListener("click", showMap);
 $("#nav-map").addEventListener("click", showMap);
 $("#nav-notebook").addEventListener("click", showNotebook);
 $("#nav-sandbox").addEventListener("click", () => openLevel(SANDBOX.id));
+$("#nav-project").addEventListener("click", () => showProject());
 document.addEventListener("keydown", e => { if (e.key === "Escape" && !$("#modal").hidden) $("#modal").hidden = true; });
 $("#modal").addEventListener("click", e => { if (e.target.id === "modal") $("#modal").hidden = true; });
 window.addEventListener("hashchange", route);

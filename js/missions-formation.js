@@ -278,7 +278,7 @@ compter(notes);`,
   id: "accolades-objet", ch: 11, type: "observe", title: "Objet ou bloc ?", notion: "deux sortes d’accolades",
   bip: "Piège : les accolades servent à **deux** choses différentes. Parfois elles ouvrent une boîte de code, parfois elles créent un objet. Apprends à les distinguer.",
   diagrams: ["blocks", "object"],
-  where: { text: "Dans un vrai fichier JavaScript, les deux se mélangent tout le temps : des objets (les données) et des blocs (les instructions). Le projet Valmont en est plein.", tags: [["{ titre: …, annee: … }", "objet : des données"], ["if (…) { … }", "bloc : des instructions"]] },
+  where: { text: "Dans un vrai fichier JavaScript, les deux se mélangent tout le temps : des objets (les données) et des blocs (les instructions). Un site de portfolio ou une boutique en est plein.", tags: [["{ titre: …, annee: … }", "objet : des données"], ["if (…) { … }", "bloc : des instructions"]] },
   why: "Si tu confonds les deux, tu écris des `;` dans un objet ou des `nom: valeur` dans un if, et rien ne marche. Reconnaître le rôle d’une accolade, c’est savoir ce qu’on a le droit d’écrire dedans.",
   lesson: {
     what: "Une accolade est un **objet** quand elle vient après `=`, dans `[ ]` ou dans `( )`, et qu’elle contient des étiquettes `nom: valeur` séparées par des virgules. C’est un **bloc** quand elle vient après `if (…)`, `else`, `function nom(…)` ou `=>`, et qu’elle contient des instructions.",
@@ -309,7 +309,7 @@ villes.forEach((v) => {
   questions: [
     { q: "L’accolade de la ligne 1 crée…", opts: ["un bloc de code", "un objet (une fiche avec des étiquettes)", "une fonction"], a: 1, why: "Après `=`, avec des `nom: valeur` séparés par des virgules : un objet." },
     { q: "L’accolade de la ligne 3 ouvre…", opts: ["le corps de la fonction (un bloc)", "un objet", "un tableau"], a: 0, why: "Après `function conseil(m)` : un bloc d’instructions." },
-    { q: "À la ligne 10, que sont les `{ }` dans les `[ ]` ?", opts: ["Des blocs if", "Des objets, rangés dans un tableau", "Des erreurs"], a: 1, why: "Un tableau d’objets, comme les projets de Valmont." },
+    { q: "À la ligne 10, que sont les `{ }` dans les `[ ]` ?", opts: ["Des blocs if", "Des objets, rangés dans un tableau", "Des erreurs"], a: 1, why: "Un tableau d’objets, comme les produits d’une boutique ou les projets d’un portfolio." },
     { q: "Comment reconnaître une accolade d’objet ?", opts: ["Elle est toujours au début d’une ligne", "Elle contient des étiquettes `nom: valeur` séparées par des virgules", "Elle est suivie de return"], a: 1, why: "Objet = données (étiquettes et virgules). Bloc = instructions (points-virgules)." }
   ],
   debrief: "Deux sortes d’accolades : les **objets** rangent des données, les **blocs** rangent des instructions. Regarde ce qui est juste avant (`=` ou `if (…)`) et ce qu’il y a dedans (virgules ou points-virgules)."

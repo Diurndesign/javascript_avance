@@ -694,7 +694,7 @@ nature.forEach((photo) => {
     { q: "Après tes `filter`, que contient le tableau `photos` ?", opts: ["Seulement les photos nature", "Toujours toutes les photos : filter crée un nouveau tableau", "Il est vide"], a: 1, why: "L’original ne change pas. C’est ce qui permet de revenir à « Tout »." },
     { q: "Sur le vrai site, quand on clique sur « Nature »…", opts: ["le site charge une autre page HTML écrite à la main", "le CSS cache les photos tout seul", "le code fait un filter sur les photos, puis redessine la galerie avec le résultat"], a: 2, why: "Données → filter → affichage. On verra le « redessiner » avec le DOM dans les prochains clients." }
   ],
-  debrief: "`filter` pour choisir, `forEach` pour afficher : c’est le duo de toutes les galeries filtrables, y compris celle du projet Valmont."
+  debrief: "`filter` pour choisir, `forEach` pour afficher : c’est le duo de toutes les galeries filtrables, sur tous les sites."
 },
 
 /* =========================== CLIENT 6 · CHEZ LOU =========================== */
