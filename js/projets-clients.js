@@ -156,7 +156,7 @@ body { margin: 0; }
 
 const BRAND_PAS = {
   brand: "Petits pas", slogan: "Une habitude à la fois",
-  fonts: "https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&display=swap",
+  fonts: "https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap",
   categories: ["Santé", "Créativité", "Lecture"],
   client: "Petits pas est une start-up qui imagine une appli mobile de suivi d’habitudes. Elle veut un prototype qui marche : une liste à cocher, une progression, des filtres, la possibilité d’ajouter et de supprimer des habitudes, et un mode sombre.",
   content: [
@@ -212,22 +212,24 @@ const BRAND_PAS = {
 
 /* 1. Les réglages : couleurs et police (bonus : change-les à la fin pour ton portfolio) */
 .app {
-  --fond: #E9F3EE;
-  --ecran: #FFFFFF;
-  --texte: #15352F;
-  --doux: #5D7A72;
-  --accent: #FF7A59;
-  --vert: #2FA36B;
-  --jaune: #FFD45C;
-  --ligne: #D5E6DD;
-  --police: "Nunito", Arial, sans-serif;
+  --fond: #E8EBF7;
+  --ecran: #F7F7F2;
+  --texte: #0E0E10;
+  --doux: #5A5D6B;
+  --cobalt: #2340F0;
+  --citron: #D4F53C;
+  --ligne: #0E0E10;
+  --carte: #FFFFFF;
+  --police: "Space Grotesk", Arial, sans-serif;
 }
 .app.sombre {
-  --fond: #0F1F1B;
-  --ecran: #17302A;
-  --texte: #E6F2EC;
-  --doux: #9DBAB1;
-  --ligne: #24443B;
+  --fond: #08080A;
+  --ecran: #141418;
+  --texte: #F2F2EC;
+  --doux: #A3A6B5;
+  --cobalt: #5C74FF;
+  --ligne: #F2F2EC;
+  --carte: #1E1E24;
 }
 
 /* 2. L'appli, mobile d'abord */
@@ -242,49 +244,46 @@ body { margin: 0; }
   transition: background .3s, color .3s;
 }
 .presentation { display: none; }
-.ecran { background: var(--ecran); min-height: 100vh; padding: 22px 16px 28px; display: grid; gap: 16px; align-content: start; transition: background .3s; }
+.ecran { background: var(--ecran); min-height: 100vh; padding: 20px 16px 28px; display: grid; gap: 14px; align-content: start; transition: background .3s; }
 .entete { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
-.bonjour { margin: 0; color: var(--doux); font-weight: 800; }
-.titre { margin: 2px 0 0; font: 900 2.1rem/1.05 var(--police); letter-spacing: -.02em; }
-.slogan { margin: 4px 0 0; color: var(--doux); }
-.theme { border: 0; background: var(--fond); color: var(--texte); border-radius: 999px; padding: 8px 12px; font: 800 .75rem var(--police); cursor: pointer; white-space: nowrap; }
+.bonjour { margin: 0; font-size: .8rem; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--cobalt); }
+.titre { margin: 4px 0 0; font: 700 2.4rem/1 var(--police); letter-spacing: -.04em; }
+.slogan { margin: 6px 0 0; color: var(--doux); }
+.theme { border: 2px solid var(--ligne); background: transparent; color: var(--texte); border-radius: 0; padding: 7px 10px; font: 700 .72rem var(--police); text-transform: uppercase; letter-spacing: .06em; cursor: pointer; white-space: nowrap; }
 
-.score { background: var(--texte); color: var(--ecran); border-radius: 24px; padding: 18px 20px; display: grid; gap: 2px; }
-.score small { opacity: .75; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .7rem; }
-.progression { margin: 0; font: 900 2.2rem var(--police); color: var(--jaune); }
-.app.sombre .score { background: #0A1A16; color: var(--texte); }
+.score { background: var(--cobalt); color: #fff; padding: 16px 18px; display: flex; justify-content: space-between; align-items: end; gap: 10px; }
+.score small { font-weight: 700; text-transform: uppercase; letter-spacing: .12em; font-size: .7rem; }
+.progression { margin: 0; font: 700 2.6rem/1 var(--police); letter-spacing: -.04em; color: var(--citron); }
 
-.filtres { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
-.filtre { flex: none; border: 2px solid var(--ligne); background: transparent; color: var(--texte); border-radius: 999px; padding: 7px 14px; font: 800 .85rem var(--police); cursor: pointer; }
-.filtre:hover, .filtre:focus { border-color: var(--texte); }
+.filtres { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; }
+.filtre { flex: none; border: 2px solid var(--ligne); background: transparent; color: var(--texte); padding: 6px 12px; font: 700 .8rem var(--police); cursor: pointer; }
+.filtre:hover, .filtre:focus { background: var(--texte); color: var(--ecran); }
 
-.grille { display: grid; gap: 10px; }
-.carte { display: grid; grid-template-columns: 1fr auto auto; align-items: center; column-gap: 8px; row-gap: 2px; background: var(--fond); border-radius: 18px; padding: 14px 12px 14px 16px; border-left: 6px solid var(--accent); }
-.carte:nth-child(3n+2) { border-left-color: var(--vert); }
-.carte:nth-child(3n) { border-left-color: var(--jaune); }
+.grille { display: grid; gap: 8px; }
+.carte { display: grid; grid-template-columns: 1fr auto auto; align-items: center; column-gap: 6px; row-gap: 2px; background: var(--carte); border: 2px solid var(--ligne); padding: 12px 10px 12px 14px; }
 .carte h2, .carte p { grid-column: 1; margin: 0; }
-.carte h2 { grid-row: 1; font: 800 1.05rem var(--police); }
-.carte p { grid-row: 2; color: var(--doux); font-size: .82rem; font-weight: 700; }
-.carte button { grid-row: 1 / span 2; grid-column: 2; border: 0; border-radius: 12px; padding: 9px 10px; font: 800 .78rem var(--police); cursor: pointer; background: var(--vert); color: #fff; }
+.carte h2 { grid-row: 1; font: 700 1.02rem var(--police); letter-spacing: -.01em; }
+.carte p { grid-row: 2; color: var(--doux); font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+.carte button { grid-row: 1 / span 2; grid-column: 2; border: 2px solid var(--ligne); padding: 8px 9px; font: 700 .74rem var(--police); cursor: pointer; background: var(--citron); color: #0E0E10; }
 .carte button + button { grid-column: 3; }
-.carte .supprimer { background: transparent; color: var(--doux); border: 2px solid var(--ligne); }
-.carte.fait { opacity: .6; }
-.carte.fait h2 { text-decoration: line-through; }
-.carte.fait .cocher { background: var(--ligne); color: var(--texte); }
+.carte .supprimer { background: transparent; color: var(--texte); }
+.carte.fait { background: var(--fond); }
+.carte.fait h2 { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--doux); }
+.carte.fait .cocher { background: var(--cobalt); color: #fff; }
 
-.ajout { display: grid; gap: 8px; background: var(--fond); border-radius: 20px; padding: 16px; }
-.ajout h2 { margin: 0; font: 900 1.1rem var(--police); }
-.ajout input { font: inherit; padding: 11px 12px; border: 2px solid var(--ligne); border-radius: 12px; background: var(--ecran); color: var(--texte); }
-.ajout button { border: 0; border-radius: 14px; padding: 12px; background: var(--accent); color: #fff; font: 900 1rem var(--police); cursor: pointer; }
+.ajout { display: grid; gap: 8px; border: 2px dashed var(--ligne); padding: 14px; }
+.ajout h2 { margin: 0; font: 700 1.05rem var(--police); }
+.ajout input { font: inherit; padding: 10px 12px; border: 2px solid var(--ligne); border-radius: 0; background: var(--carte); color: var(--texte); }
+.ajout button { border: 2px solid var(--ligne); padding: 11px; background: var(--texte); color: var(--ecran); font: 700 .95rem var(--police); text-transform: uppercase; letter-spacing: .06em; cursor: pointer; }
 
 /* 3. Version ordinateur : l'appli dans un téléphone, la présentation à côté */
 @container (min-width: 700px) {
   .page { display: grid; grid-template-columns: 1fr 400px; gap: 56px; align-items: center; padding: 48px 56px; min-height: 100vh; }
-  .presentation { display: grid; gap: 14px; align-content: center; }
-  .presentation h2 { margin: 0; font: 900 3.6rem/1 var(--police); letter-spacing: -.03em; }
+  .presentation { display: grid; gap: 16px; align-content: center; }
+  .presentation h2 { margin: 0; font: 700 4.4rem/.92 var(--police); letter-spacing: -.05em; }
   .presentation p { margin: 0; color: var(--doux); font-size: 1.15rem; max-width: 34ch; }
-  .surtitre { margin: 0; font-weight: 900; color: var(--accent); text-transform: uppercase; letter-spacing: .1em; font-size: .8rem; }
-  .ecran { min-height: 0; max-height: 760px; overflow: auto; border-radius: 40px; border: 10px solid var(--texte); box-shadow: 0 30px 60px rgba(21, 53, 47, .2); }
+  .presentation .surtitre { justify-self: start; margin: 0; font-weight: 700; background: var(--citron); color: #0E0E10; padding: 4px 10px; text-transform: uppercase; letter-spacing: .1em; font-size: .78rem; }
+  .ecran { min-height: 0; max-height: 760px; overflow: auto; border-radius: 36px; border: 3px solid var(--texte); box-shadow: 14px 14px 0 var(--cobalt); }
 }
 `
 };
