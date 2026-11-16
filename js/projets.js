@@ -89,7 +89,7 @@ const PROJECT_TYPES = {
     <div>
       <h1 class="titre">Mon projet</h1>
       <p class="slogan">Mon slogan</p>
-      <p class="nb-favoris">0 favori</p><!--@6-->
+      <p class="nb-favoris">♥ Favoris : 0</p><!--@6-->
     </div>
     <button class="theme">Mode sombre</button>
   </header>
@@ -200,7 +200,7 @@ document.querySelectorAll(".filtre").forEach((bouton) => {
 // ===== Étape 6 : les favoris =====
 function compterFavoris() {
   const nb = document.querySelectorAll(".carte.aime").length;
-  document.querySelector(".nb-favoris").textContent = nb + " favori";
+  document.querySelector(".nb-favoris").textContent = "♥ Favoris : " + nb;
 }
 
 // ===== Étape 7 : le formulaire de contact =====
@@ -641,7 +641,7 @@ function projectSteps(type) {
         { label: "Un clic : la carte reçoit `aime` et le compteur affiche 1", test: c => { const r = PJ.fresh(c); const cs = PJ.cards(r.stage); if (!cs.length || !cs[0].querySelector(".favori")) return false; cs[0].querySelector(".favori").click(); if (!cs[0].classList.contains("aime")) return "La carte cliquée n’a pas reçu la classe `aime`."; return PJ.num(txt(r.stage, ".nb-favoris")) === 1 || "`.nb-favoris` affiche « " + txt(r.stage, ".nb-favoris") + " »."; } },
         { label: "Deux cartes aimées puis une retirée : le compteur suit (2 puis 1)", test: c => { const r = PJ.fresh(c); const cs = PJ.cards(r.stage); if (cs.length < 2) return false; cs[0].querySelector(".favori").click(); cs[1].querySelector(".favori").click(); if (PJ.num(txt(r.stage, ".nb-favoris")) !== 2) return false; cs[0].querySelector(".favori").click(); return PJ.num(txt(r.stage, ".nb-favoris")) === 1 && !cs[0].classList.contains("aime"); } }
       ],
-      hints: ["Dans le `forEach` d’`afficher`, après les autres morceaux : `const favori = document.createElement(\"button\");` puis la classe et le texte.", "`favori.addEventListener(\"click\", () => { carte.classList.toggle(\"aime\"); compterFavoris(); });` puis `carte.appendChild(favori);`", "`function compterFavoris() { const nb = document.querySelectorAll(\".carte.aime\").length; document.querySelector(\".nb-favoris\").textContent = nb + \" favori\"; }`"],
+      hints: ["Dans le `forEach` d’`afficher`, après les autres morceaux : `const favori = document.createElement(\"button\");` puis la classe et le texte.", "`favori.addEventListener(\"click\", () => { carte.classList.toggle(\"aime\"); compterFavoris(); });` puis `carte.appendChild(favori);`", "`function compterFavoris() { const nb = document.querySelectorAll(\".carte.aime\").length; document.querySelector(\".nb-favoris\").textContent = \"♥ Favoris : \" + nb; }`"],
       check: [{ q: "Comment le bouton sait-il quelle carte aimer ?", opts: ["Il est créé dans le même tour de boucle que sa carte : la variable `carte` de ce tour est la sienne", "Il cherche la carte avec querySelector", "Il aime toutes les cartes"], a: 0, why: "Chaque tour du forEach a ses propres variables `carte` et `favori`." }],
       explain: "Explique comment le clic sur un ♥ change à la fois la carte et le compteur."
     });

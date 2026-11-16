@@ -30,7 +30,7 @@ const BRAND_LUNE = {
     <p class="surtitre">Studio d’illustration · Nice</p>
     <h1 class="titre">Nom du studio</h1>
     <p class="slogan">Le slogan apparaîtra ici</p>
-    <p class="nb-favoris">0 favori</p>
+    <p class="nb-favoris">♥ Favoris : 0</p>
   </section>
 
   <section class="travaux" id="travaux">
@@ -103,7 +103,7 @@ body { margin: 0; }
   transition: background .3s, color .3s;
 }
 .barre { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--ligne); }
-.logo { font: 800 1.3rem var(--police-titre); color: var(--accent); }
+.logo { font: 800 1.3rem var(--police-titre); color: var(--accent); white-space: nowrap; }
 .menu { display: flex; gap: 14px; margin-left: auto; }
 .menu a { color: var(--texte); text-decoration: none; font-weight: 600; font-size: .9rem; }
 .theme { border: 1px solid var(--texte); background: transparent; color: var(--texte); border-radius: 999px; padding: 6px 12px; font: 600 .8rem var(--police-texte); cursor: pointer; white-space: nowrap; }
@@ -252,6 +252,7 @@ body { margin: 0; }
 .score { background: var(--texte); color: var(--ecran); border-radius: 24px; padding: 18px 20px; display: grid; gap: 2px; }
 .score small { opacity: .75; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; font-size: .7rem; }
 .progression { margin: 0; font: 900 2.2rem var(--police); color: var(--jaune); }
+.app.sombre .score { background: #0A1A16; color: var(--texte); }
 
 .filtres { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
 .filtre { flex: none; border: 2px solid var(--ligne); background: transparent; color: var(--texte); border-radius: 999px; padding: 7px 14px; font: 800 .85rem var(--police); cursor: pointer; }
@@ -304,7 +305,7 @@ const BRAND_ENCRE = {
   html: `<div class="app">
   <header class="barre">
     <span class="logo">E&amp;P</span>
-    <p class="info">Imprimé à Nice · expédié en 48 h</p>
+    <p class="info">Imprimé à Nice · expédié en 48&nbsp;h</p>
     <button class="theme">Mode sombre</button>
   </header>
 
