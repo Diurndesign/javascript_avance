@@ -472,18 +472,59 @@ function showMap() {
     <div class="hero-bip"><div class="bob">${bipSVG(nb === LEVELS.length ? "happy" : null)}</div><p class="kicker" style="margin:0">Bip · ton maître de stage</p></div>
   </section>
   ${projectBlockHTML()}
-  <div class="section-title"><h2>Huit façons d’apprendre</h2><p>Chaque client mélange ces missions.</p></div>
-  <section class="howto six" aria-label="Types de missions">
-    <div><span class="type-chip type-observe">Observer</span><p>Le code s’exécute <strong>ligne par ligne</strong>. Tu regardes la mémoire changer, puis tu réponds.</p></div>
-    <div><span class="type-chip type-predict">Prédire</span><p>Tu devines ce que la console va afficher <strong>avant</strong> de lancer.</p></div>
-    <div><span class="type-chip type-fill">Compléter</span><p>Seules les cases importantes sont vides : tu tapes juste l’essentiel.</p></div>
-    <div><span class="type-chip type-fix">Réparer</span><p>Un code cassé, un client mécontent. Tu lis l’erreur et tu corriges.</p></div>
-    <div><span class="type-chip type-real">Mission client</span><p>Tu codes la commande, et le jeu la teste avec <strong>d’autres données</strong>.</p></div>
-    <div><span class="type-chip type-path">Chemin</span><p>Les données sont dessinées en boîtes. Tu écris le chemin pour <strong>récupérer, modifier ou supprimer</strong>, et tu vois le trajet.</p></div>
-    <div><span class="type-chip">Schémas</span><p>Chaque mission a son <strong>schéma</strong> : comment ça marche, avant d’écrire une ligne.</p></div>
-    <div><span class="type-chip">Pourquoi ?</span><p>Chaque code se termine par une question : tu valides seulement si tu sais <strong>expliquer</strong>.</p></div>
+  <div class="section-title"><h2>Huit façons d’apprendre</h2><p>Chaque client mélange ces missions, dans cet ordre : d’abord comprendre, puis s’entraîner, puis prouver.</p></div>
+  <section class="ways" aria-label="Les types de missions">
+    <div class="way-group">
+      <div class="way-head"><b>1</b><div><h3>Comprendre</h3><p>Voir comment ça marche avant d’écrire.</p></div></div>
+      <article class="way">
+        <div class="way-top"><span class="type-chip">Schémas</span><h4>Le dessin avant le code</h4></div>
+        <div class="way-demo demo-flow"><span>données</span><i>→</i><span>afficher()</span><i>→</i><span>page</span></div>
+        <p>Chaque mission a son schéma : ce qui entre, ce qui se passe, ce qui sort.</p>
+      </article>
+      <article class="way">
+        <div class="way-top"><span class="type-chip type-observe">Observer</span><h4>Le code au ralenti</h4></div>
+        <div class="way-demo demo-code"><code><em>▶</em> let total = 12;</code><code class="mem">total <b>12</b></code></div>
+        <p>Le code s’exécute ligne par ligne, tu vois la mémoire changer, puis tu réponds.</p>
+      </article>
+      <article class="way">
+        <div class="way-top"><span class="type-chip type-path">Chemin</span><h4>Trouver une donnée</h4></div>
+        <div class="way-demo demo-path"><span>projets</span><i>›</i><span>[1]</span><i>›</i><span>.titre</span></div>
+        <p>Les données sont dessinées en boîtes : tu écris le chemin pour récupérer, modifier ou supprimer.</p>
+      </article>
+    </div>
+    <div class="way-group">
+      <div class="way-head"><b>2</b><div><h3>S’entraîner</h3><p>Faire, avec un filet.</p></div></div>
+      <article class="way">
+        <div class="way-top"><span class="type-chip type-predict">Prédire</span><h4>Deviner avant de lancer</h4></div>
+        <div class="way-demo demo-code"><code>console.log(2 + "2");</code><code class="ask">› <span>?</span></code></div>
+        <p>Tu annonces ce que la console va afficher, puis tu vérifies.</p>
+      </article>
+      <article class="way">
+        <div class="way-top"><span class="type-chip type-fill">Compléter</span><h4>Juste l’essentiel</h4></div>
+        <div class="way-demo demo-code"><code>liste.<span class="hole">______</span>(p => …);</code></div>
+        <p>Le code est là, sauf les cases importantes : tu tapes seulement ce qui compte.</p>
+      </article>
+      <article class="way">
+        <div class="way-top"><span class="type-chip type-fix">Réparer</span><h4>Le client est mécontent</h4></div>
+        <div class="way-demo demo-code"><code class="bad">{ titre: "Lune" }</code><code class="err">Ligne 4 : il manque une virgule</code></div>
+        <p>Un code cassé : tu lis l’erreur, tu trouves la ligne, tu corriges.</p>
+      </article>
+    </div>
+    <div class="way-group">
+      <div class="way-head"><b>3</b><div><h3>Prouver</h3><p>Montrer que tu sais, pour de vrai.</p></div></div>
+      <article class="way">
+        <div class="way-top"><span class="type-chip type-real">Mission client</span><h4>La vraie commande</h4></div>
+        <div class="way-demo demo-tests"><span>✓ tes données</span><span>✓ 2 éléments</span><span>✓ liste vide</span></div>
+        <p>Tu codes seul, et le jeu teste ton code avec d’autres données : impossible de tricher.</p>
+      </article>
+      <article class="way">
+        <div class="way-top"><span class="type-chip">Pourquoi ?</span><h4>Expliquer son code</h4></div>
+        <div class="way-demo demo-quiz"><p>Pourquoi <code>length - 1</code> ?</p><span>On compte à partir de 0</span></div>
+        <p>Chaque code finit par une question : la mission est validée seulement si tu sais expliquer.</p>
+      </article>
+    </div>
   </section>
-  <p class="rule" style="margin:-20px 0 36px"><b>Règle de l’agence</b> Le copier-coller est désactivé dans l’éditeur : on tape le code soi-même, c’est comme ça qu’on le retient.</p>
+  <p class="rule" style="margin:0 0 36px"><b>Règle de l’agence</b> Le copier-coller est désactivé dans l’éditeur : on tape le code soi-même, c’est comme ça qu’on le retient.</p>
   <div class="section-title"><h2>Les clients et les formations</h2><p>Chaque client = une notion et un vrai type de site. Les formations reprennent ce qui bloque le plus.</p></div>
   <section class="chapters">
     ${CHAPTERS.map(c => `
