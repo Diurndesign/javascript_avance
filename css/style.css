@@ -711,11 +711,12 @@ button.pstep { cursor: pointer; }
 .way-head b { flex: none; display: grid; place-items: center; width: 40px; height: 40px; border: 2px solid var(--ink); border-radius: 50%; background: var(--bip); font: 800 1.2rem/1 var(--display); box-shadow: 2px 2px 0 var(--ink); }
 .way-head h3 { font: 800 1.35rem/1.1 var(--display); letter-spacing: -.01em; }
 .way-head p { margin: 2px 0 0; color: var(--ink-soft); font-size: .9rem; }
-.way { background: var(--card); border: 2px solid var(--ink); border-radius: 14px; padding: 14px 16px; display: grid; gap: 10px; box-shadow: 3px 3px 0 var(--ink); }
+.way { background: var(--card); border: 2px solid var(--ink); border-radius: 14px; padding: 14px 16px; display: grid; grid-template-rows: auto auto 1fr; align-content: start; gap: 10px; box-shadow: 3px 3px 0 var(--ink); }
 .way-top { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .way-top h4 { font: 700 1rem/1.2 var(--body); }
 .way > p { margin: 0; font-size: .92rem; color: var(--ink-soft); }
-.way-demo { border-radius: 10px; padding: 10px 12px; font: 500 .8rem/1.5 var(--mono); }
+.way-demo { border-radius: 10px; padding: 10px 12px; font: 500 .8rem/1.5 var(--mono); min-height: 66px; align-content: center; }
+.demo-flow, .demo-path, .demo-tests, .demo-keys { align-items: center; }
 .demo-code { background: var(--code-bg); color: var(--code-ink); display: grid; gap: 4px; }
 .demo-code code { background: none; padding: 0; color: inherit; white-space: pre; }
 .demo-code em { font-style: normal; color: var(--bip); }
@@ -735,3 +736,11 @@ button.pstep { cursor: pointer; }
 .demo-quiz p { margin: 0; font-weight: 700; }
 .demo-quiz span { justify-self: start; background: var(--card); border: 1.5px solid var(--ok); color: var(--ok); border-radius: 8px; padding: 1px 10px; font-weight: 700; }
 .demo-quiz span::before { content: "✓ "; }
+.way-rule { background: var(--chip); border-style: dashed; box-shadow: none; }
+.demo-keys { background: var(--card); border: 1.5px dashed var(--ink-soft); display: flex; gap: 6px; font-family: var(--body); }
+.demo-keys kbd { font: 700 .8rem var(--mono); border: 1.5px solid var(--ink); border-bottom-width: 3px; border-radius: 6px; padding: 1px 8px; background: var(--card); }
+.demo-keys s { margin-left: 8px; color: var(--ko); font-weight: 700; }
+@media (min-width: 900px) {
+  .ways { grid-template-columns: repeat(3, minmax(0, 1fr)); grid-template-rows: auto repeat(3, auto); align-items: stretch; }
+  .way-group { grid-row: span 4; grid-template-rows: subgrid; }
+}

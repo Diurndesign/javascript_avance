@@ -473,7 +473,7 @@ function showMap() {
   </section>
   ${projectBlockHTML()}
   <div class="section-title"><h2>Huit façons d’apprendre</h2><p>Chaque client mélange ces missions, dans cet ordre : d’abord comprendre, puis s’entraîner, puis prouver.</p></div>
-  <section class="ways" aria-label="Les types de missions">
+  <section class="ways" aria-label="Les types de missions" style="margin-bottom:40px">
     <div class="way-group">
       <div class="way-head"><b>1</b><div><h3>Comprendre</h3><p>Voir comment ça marche avant d’écrire.</p></div></div>
       <article class="way">
@@ -522,9 +522,13 @@ function showMap() {
         <div class="way-demo demo-quiz"><p>Pourquoi <code>length - 1</code> ?</p><span>On compte à partir de 0</span></div>
         <p>Chaque code finit par une question : la mission est validée seulement si tu sais expliquer.</p>
       </article>
+      <article class="way way-rule">
+        <div class="way-top"><span class="type-chip">Règle de l’agence</span><h4>Taper soi-même</h4></div>
+        <div class="way-demo demo-keys"><kbd>Ctrl</kbd> + <kbd>V</kbd><s>coller</s></div>
+        <p>Le copier-coller est désactivé dans l’éditeur : on tape le code, c’est comme ça qu’on le retient.</p>
+      </article>
     </div>
   </section>
-  <p class="rule" style="margin:0 0 36px"><b>Règle de l’agence</b> Le copier-coller est désactivé dans l’éditeur : on tape le code soi-même, c’est comme ça qu’on le retient.</p>
   <div class="section-title"><h2>Les clients et les formations</h2><p>Chaque client = une notion et un vrai type de site. Les formations reprennent ce qui bloque le plus.</p></div>
   <section class="chapters">
     ${CHAPTERS.map(c => `
