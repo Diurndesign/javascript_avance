@@ -795,3 +795,9 @@ button.pstep { cursor: pointer; }
 .pied-jeu { max-width: 1360px; margin: 0 auto; padding: 0 clamp(16px, 3vw, 32px) 32px; }
 .pied-jeu-in { display: flex; flex-wrap: wrap; gap: 10px 16px; justify-content: space-between; align-items: center; border-top: 2px solid var(--ink); padding-top: 16px; color: var(--ink-soft); font-size: .9rem; }
 .pied-jeu-in .btn { text-decoration: none; color: var(--ink); }
+
+/* ---------- pied de page : les autres jeux de la série et le site Atelier ---------- */
+.pied-jeu-in .serie { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-left: auto; }
+.pied-jeu-in .serie a { color: var(--ink); font-weight: 700; }
+.pied-jeu-in .serie a[aria-current] { text-decoration: none; background: var(--bip, #FFC93C); border-radius: 6px; padding: 0 6px; }
+.pied-jeu-in .serie .atelier { border-left: 2px solid var(--ink-soft); padding-left: 14px; }
