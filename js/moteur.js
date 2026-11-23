@@ -583,8 +583,9 @@ function openLevel(id) {
       <button class="btn btn-small" type="button" ${next && isUnlocked(i + 1) ? `data-open="${next.id}"` : "disabled"} aria-label="Mission suivante">▶</button>
     </div>`}
   </div>`;
-  $("#view-level").innerHTML = head + `<div class="level-grid"><div class="brief">${briefHTML(L)}</div><div class="workbench">${benchHTML(L)}</div></div>`;
+  $("#view-level").innerHTML = head + `<div class="level-grid"><div class="brief"><div id="prof-note" class="prof-note" data-id="${esc(L.id)}" hidden></div>${briefHTML(L)}</div><div class="workbench">${benchHTML(L)}</div></div>`;
   setView("level"); updateStats();
+  if (window.BipCloud && BipCloud.paintNote) BipCloud.paintNote();
   liveRun = null;
   setupLevel(L);
 }

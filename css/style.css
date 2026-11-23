@@ -801,3 +801,8 @@ button.pstep { cursor: pointer; }
 .pied-jeu-in .serie a { color: var(--ink); font-weight: 700; }
 .pied-jeu-in .serie a[aria-current] { text-decoration: none; background: var(--bip, #FFC93C); border-radius: 6px; padding: 0 6px; }
 .pied-jeu-in .serie .atelier { border-left: 2px solid var(--ink-soft); padding-left: 14px; }
+
+/* ---------- mot du formateur ---------- */
+.prof-note { background: #FFF4C2; border: 2px solid var(--ink); border-radius: 14px; padding: 12px 16px; margin: 0 0 16px; box-shadow: 4px 4px 0 var(--ink); }
+.prof-note-k { margin: 0 0 4px; font-size: .75rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+.prof-note-t { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.5; }
