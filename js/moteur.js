@@ -1113,13 +1113,14 @@ function showNotebook() {
     }).join("")}</div>
     <section class="prof">
       <p class="card-kicker">Options</p>
-      ${store.teacher ? `<p><strong>Mode formateur actif</strong> : toutes les missions sont ouvertes, les solutions et réponses sont visibles, le collage est autorisé.</p><div><button class="btn btn-small" type="button" id="teacher-off">Quitter le mode formateur</button></div>`
+      ${store.teacher ? `<p><strong>Mode formateur actif</strong> : toutes les missions sont ouvertes, les solutions et réponses sont visibles, le collage est autorisé.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn btn-small" type="button" id="teacher-all">Tout valider (3 étoiles partout)</button><button class="btn btn-small" type="button" id="teacher-off">Quitter le mode formateur</button></div>`
         : `<label for="teacher-code" style="display:grid;gap:6px">Code formateur<span style="display:flex;gap:8px;flex-wrap:wrap"><input id="teacher-code" class="teacher-input" type="password" autocomplete="off"><button class="btn btn-small" type="button" id="teacher-on">Activer</button></span></label><p id="teacher-msg" style="font-size:.9rem;color:var(--ink-soft)">Le mode formateur ouvre toutes les missions et affiche les solutions.</p>`}
       <div><button class="btn btn-small btn-ghost" type="button" id="reset-all">Effacer ma progression</button></div>
-      <p style="font-size:.9rem;color:var(--ink-soft)">La progression est enregistrée dans ce navigateur uniquement.</p>
+      <p style="font-size:.9rem;color:var(--ink-soft)">Connecte-toi pour retrouver ta progression sur n’importe quel ordinateur.</p>
     </section>`;
   setView("notebook");
   if ($("#teacher-on")) $("#teacher-on").addEventListener("click", () => { if ($("#teacher-code").value.trim().toLowerCase() === TEACHER_CODE) { store.teacher = true; save(); showNotebook(); toast("Mode formateur activé."); } else $("#teacher-msg").textContent = "Code incorrect."; });
+  if ($("#teacher-all")) $("#teacher-all").addEventListener("click", e => twoStep(e.currentTarget, "Sûr ? Clique encore", () => { LEVELS.forEach(l => { store.progress[l.id] = { stars: 3 }; }); save(); updateStats(); if (typeof refreshProjectNav === "function") refreshProjectNav(); showNotebook(); toast("Toutes les missions sont validées."); }));
   if ($("#teacher-off")) $("#teacher-off").addEventListener("click", () => { store.teacher = false; save(); showNotebook(); });
   $("#reset-all").addEventListener("click", e => twoStep(e.currentTarget, "Sûr ? Clique encore", () => { store = { progress: {}, drafts: {}, teacher: store.teacher }; save(); updateStats(); showNotebook(); }));
   updateStats();
