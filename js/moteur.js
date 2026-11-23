@@ -665,7 +665,6 @@ function benchHTML(L) {
       <button class="btn btn-yellow" type="button" id="trace">Pas à pas</button>
       ${L.sandbox ? "" : `<button class="btn" type="button" id="hint">Indice (${L.hints.length})</button>`}
       <button class="btn btn-ghost" type="button" id="reset">Recommencer</button>
-      ${store.teacher && !L.sandbox ? `<button class="btn btn-ghost" type="button" id="teacher-solution">Solution (formateur)</button>` : ""}
       <span class="kbd">Ctrl + Entrée pour lancer</span>
     </div>
     <div id="check-slot"></div>
